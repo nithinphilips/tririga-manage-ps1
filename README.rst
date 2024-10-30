@@ -40,42 +40,9 @@ To see detailed help, run:
 .. mlr --icsv --ocsv cat then clean-whitespace tririga-manage.csv tririga-manage-rest.csv
 
 .. csv-table::
-   :header-rows: 1
-   :stub-columns: 1
-
-    Name,Synopsis
-    Tririga-Browse,Opens a TRIRIGA installation directory path
-    Tririga-Db,Connects to the TRIRIGA database
-    Tririga-Disable,Disables TRIRIGA service
-    Tririga-Enable,Enables TRIRIGA service
-    Tririga-Enter,Starts a remote powershell session to a server
-    Tririga-Environments,Prints all known environments
-    Tririga-Import-Omp,Uploads and imports a local OMP zip file to TRIRIGA
-    Tririga-Instances,Prints all known instances in a given environment
-    Tririga-Log,Tails a TRIRIGA log file
-    Tririga-Log-Open,Opens a TRIRIGA log file
-    Tririga-Open,Opens a TRIRIGA environment
-    Tririga-RDP,Opens an RDP client connection to the TRIRIGA server
-    Tririga-Restart,Restarts TRIRIGA service
-    Tririga-Start,Starts TRIRIGA service
-    Tririga-Status,Get the current status of TRIRIGA service
-    Tririga-Stop,Stops TRIRIGA service
-    Tririga-Upload-Omp,Uploads a local OMP zip file to TRIRIGA
-    Was-Browse,Opens a WebSphere profile path
-    Was-Log,Tails a WebSphere log file
-    Was-Log-Open,Opens a WebSphere log file
-    Was-Open,Opens the WebSphere Admin Console
-    Disable-Tririga-WorkflowInstance,Sets the workflow instance recording setting to ERRORS_ONLY
-    Enable-Tririga-WorkflowInstance,Sets the workflow instance recording setting to ALWAYS
-    Get-Tririga-ActiveUsers,Gets a list of currently logged in users
-    Get-Tririga-AdminUsers,Gets a list of users who can access the TRIRIGA Admin Console
-    Get-Tririga-Agent-Host,Gets the configured host(s) for the given agent(s)
-    Get-Tririga-Agents,Gets TRIRIGA Agents configuration
-    Get-Tririga-BuildNumber,Gets TRIRIGA build number
-    Get-Tririga-Summary,Gets basic information about a TRIRIGA instance
-    Start-Tririga-Agent,Starts a TRIRIGA agent
-    Stop-Tririga-Agent,Stops a TRIRIGA agent
-    Update-Tririga-WorkflowInstance,Updates workflow instance recording setting
+    :header-rows: 1
+    :stub-columns: 1
+    :file: tririga-manage-ps1.csv
 
 
 Features

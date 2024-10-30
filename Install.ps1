@@ -70,6 +70,17 @@ If (!(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
     echo "Already configured"
 }
 
+if ($develop) {
+    Import-Module Tririga-Manage -Force
+    Import-Module Tririga-Manage-Rest -Force
+    Get-Command -Module Tririga-Manage | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Export-CSV tririga-manage.csv
+    Get-Command -Module Tririga-Manage-Rest | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Export-CSV tririga-manage-rest.csv
+
+    mlr --icsv --ocsv cat then clean-whitespace tririga-manage.csv tririga-manage-rest.csv > tririga-manage-ps1.csv
+    Remove-Item tririga-manage.csv
+    Remove-Item tririga-manage-rest.csv
+}
+
 if ($publish) {
     if(!$nuGetApiKey) {
         Write-Error '-NugetApiKey is required when -Publish switch is set'
