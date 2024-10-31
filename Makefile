@@ -89,10 +89,11 @@ release: dist ChangeLog.$(GIT_TAG).md release-check ## Releases the current vers
 	#-tea release assets delete --confirm $(GIT_TAG) $(NATIVE_DISTZIP)
 	tea release assets create $(GIT_TAG) $(DISTROOT)/$(DISTZIP)
 	printf "\e[1;38:5:40m✓\e[0m Uploaded file $(DISTZIP) to release $(GIT_TAG)\n"
+	pwsh -Command "& Install.ps1 -Publish -NoInstallModule -NuGetApiKey $(GITEA_API_TOKEN) -Verbose"
+	printf "\e[1;38:5:40m✓\e[0m Published package to Gitea NuGet repository\n"
 
 publish: dist # Published the dist file to Amazon AWS
-	aws s3 cp "$(OMP_FILE)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(OMP_FILE_BASE)"
-	qrencode -t ansiutf8 "https://$(AWS_BUCKET).s3.amazonaws.com/$(OMP_FILE_BASE)"
+	aws s3 cp "$(DISTROOT)/$(DISTZIP)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(DISTZIP)"
 
 help: ## This help dialog.
 	@IFS=$$'\n' ; \

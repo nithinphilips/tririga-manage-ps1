@@ -16,7 +16,7 @@ Set-Location $path
 
 # Check $Env:PSModulePath to see the default search locations
 
-Function Update-Module() {
+Function Update-ModuleManifestFilesForInstall() {
     param(
         [Parameter(Mandatory)]
         [string]$moduleName
@@ -44,7 +44,7 @@ Function Update-Module() {
 }
 
 Write-Host "==> Update Module definition files"
-$modules | ForEach-Object { Update-Module $_ }
+$modules | ForEach-Object { Update-ModuleManifestFilesForInstall $_ }
 
 $profileDir = Split-Path $Profile -Parent
 $moduleDir = Join-Path $profileDir "Modules"
@@ -80,6 +80,7 @@ if ($publish) {
         exit 1
     }
 
-    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -Repository Gitea -Verbose -NuGetApiKey $nuGetApiKey; Write-Host "Published module $_" }
+    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -Repository Gitea -NuGetApiKey $nuGetApiKey; Write-Host "Published module $_" }
 }
+
 
