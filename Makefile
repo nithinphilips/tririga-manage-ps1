@@ -27,9 +27,9 @@ all-docs.csv: Tririga-Manage.csv Tririga-Manage-Rest.csv
 	mlr --icsv --ocsv cat then sort -f Name then clean-whitespace $^ > $@
 
 $(DISTROOT)/$(DISTZIP): $(DIST_EXTRAS) $(PSFILES)
-	mkdir -p $(DISTDIR)
-	cp -r Tririga-Manage/ $(DISTDIR)/Tririga-Manage/$(VERSION)/
-	cp -r Tririga-Manage-Rest $(DISTDIR)
+	mkdir -p $(DISTDIR) $(DISTDIR)/Tririga-Manage/$(VERSION) $(DISTDIR)/Tririga-Manage-Rest/$(VERSION)
+	cp -r Tririga-Manage/* $(DISTDIR)/Tririga-Manage/$(VERSION)/
+	cp -r Tririga-Manage-Rest/* $(DISTDIR)/Tririga-Manage-Rest/$(VERSION)/
 	cp $(DIST_EXTRAS) $(DISTDIR)/
 	cd $(DISTROOT) && zip -r $(DISTZIP) $(DISTBASE)/
 	rm -rf $(DISTDIR)
