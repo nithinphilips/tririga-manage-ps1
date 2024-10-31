@@ -1,6 +1,7 @@
+#!/usr/bin/env pwsh
 param(
     [switch]$publish,
-    [string]$version="3.0.0",
+    [string]$version="4.0.0",
     [string]$nuGetApiKey,
     [switch]$noInstallModule
 )
