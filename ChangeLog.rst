@@ -1,6 +1,31 @@
 Change Log
 ==========
 
+v4.1.0
+------
+* Remove support for environment variables because the validation did not
+  work 
+* Rationalize ``Install.ps``
+
+  * No arguments will install module to current profile and update profile
+    file.
+  * ``-UpdateModule`` switch will update module manifests (used with
+    ``-NoInstallModule`` during dist)
+  * ``-Publish`` switch will publish to Gitea
+
+* ``make dist`` and ``make release`` will update module manifest
+* ``make dist`` and ``make release`` will update readme
+* Rename ``Upload-TririgaOmp`` to ``Save-TririgaOmp``. The ``Upload-`` verb is
+  still available as an alias
+* Rationalize command arguments.
+
+  * ``-Environment`` is mandatory and can be given at position 0.
+  * ``-Instance`` can be given at position 1, when command operates on all
+    instances by default and has no other mandatory arguments.
+  * In all other scenarios, ``-Instance`` must be named.
+
+* Improved documentation
+
 v4.0.0
 ------
 * Rename all commands to align with `Approved Verbs for PowerShell Commands

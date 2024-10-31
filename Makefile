@@ -36,12 +36,12 @@ ChangeLog.%.md: ChangeLog.md
 
 # Select-Object Name,Synopsis,ModuleName
 %.csv: $(PSFILES)
-	pwsh -Command "\$$env:PSModulePath = (Resolve-Path .).Path; Get-Command -Module $* | % {Get-Help \$$_.Name} | Select-Object Name,Synopsis | Export-CSV $*.csv"
+	pwsh -Command "\$$env:PSModulePath = (Resolve-Path .).Path; Get-Command -Module $* | % {\$$h=(Get-Help \$$_.Name); if(\$$_.CommandType -eq \"Alias\") {Add-Member -Force -InputObject \$$h "Name" \$$_.Name}; \$$h} | Select-Object Name,Synopsis | Export-CSV $*.csv"
 
 all-docs.csv: Tririga-Manage.csv Tririga-Manage-Rest.csv
 	mlr --icsv --ocsv cat then sort -f Name then clean-whitespace $^ > $@
 
-$(DISTROOT)/$(DISTZIP): $(DIST_EXTRAS) $(PSFILES)
+$(DISTROOT)/$(DISTZIP): update-module update-readme $(DIST_EXTRAS) $(PSFILES)
 	mkdir -p $(DISTDIR) $(DISTDIR)/Tririga-Manage/$(VERSION) $(DISTDIR)/Tririga-Manage-Rest/$(VERSION)
 	cp -r Tririga-Manage/* $(DISTDIR)/Tririga-Manage/$(VERSION)/
 	cp -r Tririga-Manage-Rest/* $(DISTDIR)/Tririga-Manage-Rest/$(VERSION)/
@@ -55,6 +55,9 @@ all-docs.tmp: all-docs.csv
 	echo "    :stub-columns: 1" >> $@
 	echo "" >> $@
 	sed 's/^/    /g' $< >> $@
+
+update-module:
+	pwsh Install.ps1 -UpdateModule -NoInstallModule
 
 update-readme: all-docs.tmp
 	# Delete everything between these lines
@@ -81,7 +84,7 @@ release-check:
 		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to origin because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
 	fi \
 
-release: dist ChangeLog.$(GIT_TAG).md release-check ## Releases the current version to Gitea
+release: update-module dist ChangeLog.$(GIT_TAG).md release-check ## Releases the current version to Gitea
 	# This uses my version of tea. If it gets upgraded, it may lose the --note-file flag
 	# 'tea release create' may fail with exit code 1 if release already exists, but that's OK.
 	(tea release create --note-file ChangeLog.$(GIT_TAG).md --tag $(GIT_TAG) --title $(GIT_TAG) && printf "\e[1;38:5:40m✓\e[0m Release $(GIT_TAG) created\n" || printf "\e[1;38:5:190m✓\e[0m Release $(GIT_TAG) exists\n")

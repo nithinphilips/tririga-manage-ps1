@@ -1,9 +1,10 @@
 #!/usr/bin/env pwsh
 param(
+    [string]$version="4.1.0",
+    [switch]$updateModule,
+    [switch]$noInstallModule,
     [switch]$publish,
-    [string]$version="4.0.0",
-    [string]$nuGetApiKey,
-    [switch]$noInstallModule
+    [string]$nuGetApiKey
 )
 
 $modules = @("Tririga-Manage", "Tririga-Manage-Rest")
@@ -42,8 +43,10 @@ Function Update-ModuleManifestFilesForInstall() {
     Update-ModuleManifest @Params
 }
 
-Write-Host "==> Update Module definition files"
-$modules | ForEach-Object { Update-ModuleManifestFilesForInstall $_ }
+if($updateModule) {
+    Write-Host "==> Update Module definition files"
+    $modules | ForEach-Object { Update-ModuleManifestFilesForInstall $_ }
+}
 
 $profileDir = Split-Path $Profile -Parent
 $moduleDir = Join-Path $profileDir "Modules"
@@ -52,25 +55,23 @@ if (!$noInstallModule) {
     Write-Host "==> Install Modules to $moduleDir"
     New-Item -Type Directory -Path $moduleDir -Force | Out-Null
     $modules | ForEach-Object { Copy-Item -Recurse -Force -Path $_ -Destination $moduleDir; Write-Host "Installed module $_" }
-}
 
-Write-Host "==> Update Profile at $Profile"
-$environmentsFile = Join-Path $profileDir "environments.ps1"
+    Write-Host "==> Update Profile at $Profile"
+    $environmentsFile = Join-Path $profileDir "environments.ps1"
 
-# TODO: Copy environments.ps1 to profile dir (if not already one there) and source that.
+    If (!(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
+    {
+        if (!(Test-Path -Path $environmentsFile)) {
+            Copy-Item environments.sample.ps1 $environmentsFile
+            Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
+        }
 
-If (!(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
-{
-    if (!(Test-Path -Path $environmentsFile)) {
-        Copy-Item environments.sample.ps1 $environmentsFile
-        Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
+        echo "Installing this script to your PowerShell profile $Profile"
+        "`$TririgaEnvironments = (Get-Content `"$environmentsFile`" | Out-String | Invoke-Expression)" | Out-file "$Profile" -append
+        "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
+    } else {
+        echo "Profile already configured"
     }
-
-    echo "Installing this script to your PowerShell profile $Profile"
-    "`$TririgaEnvironments = (Get-Content `"$environmentsFile`" | Out-String | Invoke-Expression)" | Out-file "$Profile" -append
-    "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
-} else {
-    echo "Profile already configured"
 }
 
 if ($publish) {

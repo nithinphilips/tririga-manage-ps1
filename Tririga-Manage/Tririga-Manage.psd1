@@ -12,7 +12,7 @@
 RootModule = 'Tririga-Manage.psm1'
 
 # Version number of this module.
-ModuleVersion = '4.0.0'
+ModuleVersion = '4.1.0'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core', 'Desktop'
@@ -71,9 +71,9 @@ PowerShellVersion = '5.1'
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-Environments', 'Get-Instances', 'Get-Status', 'Start-Service', 
                'Stop-Service', 'Restart-Service', 'Disable-Service', 'Enable-Service', 
-               'Open-Database', 'Get-Log', 'Open-Log', 'Get-WasLog', 'Open-WasLog', 
-               'Enter-Host', 'Open-Web', 'Open-WasWeb', 'Open-RDP', 'Open-Folder', 
-               'Upload-Omp', 'Import-Omp', 'Open-WasFolder'
+               'Open-Database', 'Get-Log', 'Open-Log', 'Enter-Host', 'Open-Web', 
+               'Open-RDP', 'Open-Folder', 'Save-Omp', 'Import-Omp', 'Open-WasFolder', 
+               'Open-WasWeb', 'Get-WasLog', 'Open-WasLog'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = '*'
@@ -82,7 +82,7 @@ CmdletsToExport = '*'
 VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = '*'
+AliasesToExport = 'Upload-Omp'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()

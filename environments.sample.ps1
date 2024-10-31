@@ -1,18 +1,24 @@
+# This file is a PowerShell Hash Table.
+# Doc: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_hash_tables#syntax
 @{
+    # The key is the unique name you want to use for this environment
+    # This is used as the value for the -Environment argument
     "LOCAL" = @{
-        # If $true, any actions that might affect the environment will require confirmation
+        # If $true, any actions that might modify the environment will require confirmation
+        # Set this on Production environment.
         Warn = $False;
         # The DBeaver profile associated with this environment
         DbProfile = "Tririga Local";
         # Tririga Username and Password (non-SSO) for use with the REST api calls
         Username = "system";
         Password = "badadmin";
-        # List all your TRIRIGA servers/instances
+        # List of all your TRIRIGA servers/instances
         Servers = @{
             # The key is the unique name you want to use for this instance
+            # This is used as the value for the -Instance argument
             "ONE" = @{
                 # The hostname of this instance
-                Host = "192.168.50.167"
+                Host = "localhost"
                 # The path where TRIRIGA is installed on the server
                 Tririga = "C:\IBM\Tririga1"
                 # The path where WebSphere profile is located on the server
@@ -20,12 +26,12 @@
                 # The Windows service that controls this TRIRIGA instance
                 Service = "TestService1"
                 # The URL to access this TRIRIGA instance
-                Url = "http://192.168.50.167:9080"
+                Url = "http://localhost:9080"
                 # Optional. Url that bypasses SSO (used when you use IIS auth).
                 # For SAML SSO, leave this out
-                ApiUrl = "http://192.168.50.167:9080"
+                ApiUrl = "http://localhost:9081"
                 # The URL to access this instance's WebSphere console
-                WasUrl = "http://example:9060/ibm/console"
+                WasUrl = "http://localhost:9060/ibm/console"
                 # Optional. This should be either hostname or if set, the
                 # INSTANCE_NAME property in TRIRIGAWEB.properties This is used
                 # to match agent host information to an instance
@@ -35,16 +41,14 @@
                 # agent.
                 ObjectMigrationAgent = $true
             };
-            # Repeat for all other servers
+            # Repeat for all other servers/instances
             "TWO" = @{
-                Host = "192.168.50.167"
-                Tririga = "C:\IBM\Tririga1"
-                WebSphere = "C:\Program Files\IBM\WebSphere\AppServer\profiles\AppSrv01\logs\server1"
-                Service = "TestService1"
-                Url = "http://192.168.50.167:9080"
-                ApiUrl = "http://192.168.50.167:9080"
-                WasUrl = "http://example:9060/ibm/console"
+                # ...
             };
         }
+    };
+    # Repeat for all other environments
+    "REMOTE" = @{
+
     };
 }

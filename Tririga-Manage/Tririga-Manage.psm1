@@ -2,46 +2,6 @@
 #
 # PowerShell commands to manage TRIRIGA instances on Windows Servers
 #
-# The commands allow you to refer to your instances by [Environment] [Instance] (eg: DEV NS1).
-#
-# Version: 2.0
-#
-# Requirements
-# ------------
-# * Windows Powershell 5.x or PowerShell 7.x
-# * TRIRIGA servers must be running Windows
-# * Your account must have access to TRIRIGA servers
-#
-# Notice
-# ------
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#
-# Commands
-# --------
-# The commands are self-documented:
-# Run: Get-Help Tririga-*; Get-Help Was-*
-#
-# Features
-# --------
-# * Simple way to refer to instances
-# * Operate on all instances in an environment at once
-# * Warning and count down when working on production instances
-#
-# Installation
-# ------------
-# Run the script with -install flag:
-#
-#  ./tririga.ps1 -install
-#
-# If you use OneDrive, the files may also be placed in your OneDrive managed Documents folder.
-#
-# To use without adding to your profile:
-#
-#   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-#   . ./tririga.ps1
-#
 
 # Tririga-Manage-Rest is published with a prefix
 # Re-import it in this context without a prefix
@@ -51,6 +11,7 @@ Import-Module Tririga-Manage-Rest -Prefix "" -ErrorAction 'SilentlyContinue'
 
 function GetTririgaInstances([string]$environment, [string]$instance = $null, [boolean]$warn = $true) {
 
+    Write-Verbose "Search for environment $environment"
     $tririgaEnvironment = $TririgaEnvironments[$environment]
 
     if (!$tririgaEnvironment) {
@@ -68,6 +29,7 @@ function GetTririgaInstances([string]$environment, [string]$instance = $null, [b
     }
 
     if ($instance) {
+        Write-Verbose "An instance filter is present. Search for instance $instance in environment $environment"
         $tririgaInstance = $tririgaEnvironment["Servers"][$instance]
 
         if (!$tririgaInstance) {
@@ -81,6 +43,7 @@ function GetTririgaInstances([string]$environment, [string]$instance = $null, [b
 
         return Write-Output @($tririgaInstance) -NoEnumerate
     } else {
+        Write-Verbose "No instance filter present. Selecting all instances in environment $environment"
         ForEach($inst in $tririgaEnvironment.Servers.keys) {
             $tririgaInstance = $tririgaEnvironment["Servers"][$inst]
             $tririgaInstance["Instance"] = $inst
@@ -236,40 +199,59 @@ function HandleOmp() {
 
 <#
 .SYNOPSIS
-Prints all known environments
+Gets all known environments
 .DESCRIPTION
-Prints a list of all known environment
+Gets a list of all known environment
 #>
 function Get-Environments() {
-    Write-Output "Known environments are: $(($TririgaEnvironments.keys) -join ', ')"
+    [CmdletBinding()]
+    param(
+        # If set, the object is returned as-is.
+        [switch]$raw = $false
+    )
+
+    if($raw) {
+        $TririgaEnvironments
+    } else {
+        Write-Output "Known environments are: $(($TririgaEnvironments.keys) -join ', ')"
+    }
 }
 
 <#
 .SYNOPSIS
-Prints all known instances in a given environment
+Gets all known instances in a given environment
 .DESCRIPTION
-Prints a list of all known instances in a given environment
-.PARAMETER environment
-The TRIRIGA environment name to access. If omitted all environments and instances will be printed.
-.EXAMPLE
-Tririga-Instances DEV
+Gets a list of all known instances in a given environment
 #>
 function Get-Instances() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        # If omitted all environments and instances will be printed.
+        [Parameter(Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT
+        [Alias("Env", "E")]
+        [string]$environment,
+        # If set, the object is returned as-is.
+        [switch]$raw = $false
     )
 
     $tririgaEnvironment = $TririgaEnvironments[$environment]
 
     if ($tririgaEnvironment) {
-        Write-Output "$environment environment: $(($tririgaEnvironment.Servers.keys) -join ', ')"
+        if ($raw) {
+            $tririgaEnvironment
+        } else {
+            Write-Output "$environment environment: $(($tririgaEnvironment.Servers.keys) -join ', ')"
+        }
     } else {
-        ForEach($env in $TririgaEnvironments.keys) {
-            $envItem = $TririgaEnvironments[$env]
-            Write-Output "$env environment: $(($envItem.Servers.keys) -join ', ')"
+        if($raw) {
+            $TririgaEnvironments
+        } else {
+            ForEach($env in $TririgaEnvironments.keys) {
+                $envItem = $TririgaEnvironments[$env]
+                Write-Output "$env environment: $(($envItem.Servers.keys) -join ', ')"
+            }
         }
     }
 }
@@ -279,23 +261,24 @@ function Get-Instances() {
 Get the current status of TRIRIGA service
 .DESCRIPTION
 Get the current status of TRIRIGA Windows service
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-.PARAMETER tail
-The number of lines to print from server.log. Default is 5.
 #>
 function Get-Status() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE,
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # The number of lines to print from server.log.
         [int]$tail = 5,
-        [switch]$disk = $false
+        # Shows disk status
+        [switch]$disk
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
@@ -338,19 +321,20 @@ Starts TRIRIGA service
 Starts a single TRIRIGA instance or all instances in an environment
 
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
 #>
 function Start-Service() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance)
@@ -382,19 +366,20 @@ Stops TRIRIGA service
 Stops a single TRIRIGA instance or all instances in an environment
 
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
 #>
 function Stop-Service() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance)
@@ -422,19 +407,20 @@ Restarts TRIRIGA service
 Restarts a single TRIRIGA instance or all instances in an environment
 
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
 #>
 function Restart-Service() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance)
@@ -472,19 +458,20 @@ Disables TRIRIGA service
 Disables TRIRIGA services. Disabled services will not start on server reboot.
 
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
 #>
 function Disable-Service() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance)
@@ -511,19 +498,20 @@ Enables TRIRIGA service
 Enables TRIRIGA services. Enabled services will start automatically on server reboot.
 
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
 #>
 function Enable-Service() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance)
@@ -545,25 +533,27 @@ function Enable-Service() {
 
 <#
 .SYNOPSIS
-Connects to the TRIRIGA database
+Opens Dbeaver and connects to the TRIRIGA database
 .DESCRIPTION
 Opens DBeaver and connects to the given environment's database
 
 The database connection profile must already exist. This command will only
 connect to it and opens a new SQL sheet.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER sqlfiles
-One or more SQL file to open and connect to the database. Wild cards are supported. Eg: Tririga-DB PROD -sqlfiles *.sql
-
-When naming individual files, separate with a comma: Tririga-DB PROD -sqlfiles 1.sql,2.sql
 #>
 function Open-Database() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
+        [Alias("Env", "E")]
+        [string]$environment,
+        # One or more SQL file to open.
+        # Wild cards are supported. Eg: *.sql
+        # Separate multiple files with a comma: one.sql,two.sql
+        [Parameter(Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
         [string[]]$sqlfiles
     )
 
@@ -590,26 +580,26 @@ function Open-Database() {
 Tails a TRIRIGA log file
 .DESCRIPTION
 Tails a TRIRIGA log file in the console
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-.PARAMETER log
-The log file to view. Default is server.log. Possible values are: server, om, security, performance or the exact log file name
-.PARAMETER tail
-The initial number of lines to tail. Default is 10.
 #>
 function Get-Log() {
+    [Alias("Tail-Log")]
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [Parameter(ValueFromPipelineByPropertyName=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [string]$instance = $env:TRIRIGA_INSTANCE,
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # The log file to view. Default is server.log. Possible values are:
+        # server, om, security, performance or the exact log file name
+        [Parameter(Position=2)]
         [string]$log = $null,
+        # The initial number of lines to tail.
         [int]$tail = 10
     )
 
@@ -631,23 +621,23 @@ function Get-Log() {
 Opens a TRIRIGA log file
 .DESCRIPTION
 Opens a TRIRIGA log file in the default viewer
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Get-TririgaEnvironment` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Get-TririgaInstances` to see known instances.
-.PARAMETER log
-The log file to view. Default is server.log. Possible values are: out, err or the exact log file name
 #>
 function Open-Log() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [Parameter(ValueFromPipelineByPropertyName=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [string]$instance = $env:TRIRIGA_INSTANCE,
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # The log file to view. Default is server.log. Possible values are:
+        # server, om, security, performance or the exact log file name
+        [Parameter(Position=2)]
         [string]$log = $null
     )
 
@@ -665,29 +655,265 @@ function Open-Log() {
 
 <#
 .SYNOPSIS
+Starts a remote powershell session to a TRIRIGA instance
+.DESCRIPTION
+Starts a remote powershell session to a TRIRIGA instance using the Enter-PSSession command.
+.LINK
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/enter-pssession
+#>
+function Enter-Host() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        [Alias("Inst", "I")]
+        [Parameter(Mandatory, Position=1)]
+        [string]$instance
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            Enter-PSSession -ComputerName $inst["Host"]
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Opens a TRIRIGA environment
+.DESCRIPTION
+Opens the TRIRIGA environment URL in your default browser
+#>
+function Open-Web() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            START $inst.Url
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Opens an RDP client connection to the TRIRIGA server
+.DESCRIPTION
+Launches the Microsoft Remote Desktop Connection tool with the server name pre-filled.
+#>
+function Open-RDP() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            Start-Process "$env:windir\system32\mstsc.exe" -ArgumentList "/v:$($inst["Host"])"
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Opens a TRIRIGA installation directory path
+.DESCRIPTION
+Opens a TRIRIGA installation directory path in your default file browser application
+#>
+function Open-Folder() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
+            Invoke-Item $tririgaRoot
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Uploads a local OMP zip file to TRIRIGA
+.DESCRIPTION
+Uploads a local OMP zip file to TRIRIGA
+.EXAMPLE
+PS> Save-Omp DEV one.zip,two.zip
+.EXAMPLE
+PS> Save-Omp DEV *.zip
+#>
+function Save-Omp() {
+    [Alias("Upload-Omp")]
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        [Parameter(Mandatory, Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$ompfiles,
+        [switch]$dryrun,
+        [switch]$force
+    )
+
+    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\Uploads" -DryRun $dryrun -Force $force -TailLog $false
+}
+
+<#
+.SYNOPSIS
+Uploads and imports a local OMP zip file to TRIRIGA
+.DESCRIPTION
+Uploads and imports a local OMP zip file to TRIRIGA
+#>
+function Import-Omp() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        [Parameter(Mandatory, Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [SupportsWildcards()]
+        [string[]]$ompfiles,
+        [switch]$dryrun,
+        [switch]$force
+    )
+
+    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\UploadsWithImport" -DryRun $dryrun -Force $force -TailLog $true
+}
+
+<#
+.SYNOPSIS
+Opens a WebSphere profile path
+.DESCRIPTION
+Opens a WebSphere profile path in your default file browser application
+#>
+function Open-WasFolder() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            $wasRoot = GetUncPath -server $inst["Host"] -path $inst["WebSphere"]
+            Invoke-Item $wasRoot
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Opens the WebSphere Admin Console
+.DESCRIPTION
+Opens the WebSphere Admin Console for a TRIRIGA environment in your default browser
+#>
+function Open-WasWeb() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            START $inst.WasUrl
+        }
+    }
+}
+
+<#
+.SYNOPSIS
 Tails a WebSphere log file
 .DESCRIPTION
 Tails a WebSphere log file in the console
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Get-TririgaEnvironments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Get-TririgaInstances` to see known instances.
-.PARAMETER log
-The log file to view. Default is SystemOut.log. Possible values are: out, err or the exact log file name
-.PARAMETER tail
-The initial number of lines to tail. Default is 10.
 #>
 function Get-WasLog() {
+    [Alias("Tail-WasLog")]
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [Parameter(ValueFromPipelineByPropertyName=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [string]$instance = $env:TRIRIGA_INSTANCE,
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # The log file to view. Default is SystemOut.log. Possible values are: out, err or the exact log file name
         [string]$log = $null,
+        # The initial number of lines to tail.
         [int]$tail = 10
     )
 
@@ -707,23 +933,21 @@ function Get-WasLog() {
 Opens a WebSphere log file
 .DESCRIPTION
 Opens a WebSphere log file in the default viewer
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-.PARAMETER log
-The log file to view. Default is SystemOut.log. Possible values are: out, err or the exact log file name
 #>
 function Open-WasLog() {
+    [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
+        [Parameter(Mandatory, Position=0)]
         [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [Parameter(ValueFromPipelineByPropertyName=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [string]$instance = $env:TRIRIGA_INSTANCE,
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # The log file to view. Default is SystemOut.log. Possible values are: out, err or the exact log file name
         [string]$log = $null
     )
 
@@ -734,249 +958,6 @@ function Open-WasLog() {
             $wasRoot = GetUncPath -server $inst["Host"] -path $inst["WebSphere"]
             $logPath = Join-Path -Path $wasRoot -ChildPath (GetWasLogName $log)
             Invoke-Item $logPath
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-Starts a remote powershell session to a server
-.DESCRIPTION
-Starts a remote powershell session to a TRIRIGA server using the Enter-PSSession command.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-.LINK
-https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/enter-pssession
-#>
-function Enter-Host() {
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [Parameter(ValueFromPipelineByPropertyName=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [string]$instance = $env:TRIRIGA_INSTANCE
-    )
-
-    $instances = (GetTririgaInstances -environment $environment -instance $instance)
-
-    if ($instances) {
-        ForEach($inst in $instances) {
-            Enter-PSSession -ComputerName $inst["Host"]
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-Opens a TRIRIGA environment
-.DESCRIPTION
-Opens the TRIRIGA environment URL in your default browser
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-#>
-function Open-Web() {
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
-    )
-
-    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
-
-    if ($instances) {
-        ForEach($inst in $instances) {
-            START $inst.Url
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-Opens the WebSphere Admin Console
-.DESCRIPTION
-Opens the WebSphere Admin Console for a TRIRIGA environment in your default browser
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-#>
-function Open-WasWeb() {
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
-    )
-
-    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
-
-    if ($instances) {
-        ForEach($inst in $instances) {
-            START $inst.WasUrl
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-Opens an RDP client connection to the TRIRIGA server
-.DESCRIPTION
-Launches the Microsoft Remote Desktop Connection tool with the server name pre-filled.
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-#>
-function Open-RDP() {
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [Parameter(ValueFromPipelineByPropertyName=$true, Position=2)]
-        [ValidateNotNullOrEmpty()]
-        [string]$instance = $env:TRIRIGA_INSTANCE
-    )
-
-    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
-
-    if ($instances) {
-        ForEach($inst in $instances) {
-            Start-Process "$env:windir\system32\mstsc.exe" -ArgumentList "/v:$($inst["Host"])"
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-Opens a TRIRIGA installation directory path
-.DESCRIPTION
-Opens a TRIRIGA installation directory path in your default file browser application
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-#>
-function Open-Folder() {
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
-    )
-
-    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
-
-    if ($instances) {
-        ForEach($inst in $instances) {
-            $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
-            Invoke-Item $tririgaRoot
-        }
-    }
-}
-
-<#
-.SYNOPSIS
-Uploads a local OMP zip file to TRIRIGA
-.DESCRIPTION
-Uploads a local OMP zip file to TRIRIGA
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances`
-to see known instances. This instance must the running the Object Migration
-agent for the upload to work.
-.EXAMPLE
-Tririga-Upload-Omp DEV one.zip,two.zip
-.EXAMPLE
-Tririga-Upload-Omp DEV *.zip
-#>
-function Upload-Omp() {
-    [CmdletBinding(SupportsShouldProcess=$true)]
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string[]]$ompfiles,
-        [switch]$dryrun,
-        [switch]$force
-    )
-
-    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\Uploads" -DryRun $dryrun -Force $force -TailLog $false
-}
-
-<#
-.SYNOPSIS
-Uploads and imports a local OMP zip file to TRIRIGA
-.DESCRIPTION
-Uploads and imports a local OMP zip file to TRIRIGA
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances`
-to see known instances. This instance must the running the Object Migration
-agent for the upload to work.
-#>
-function Import-Omp() {
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        [Parameter(Mandatory)]
-        [ValidateNotNullOrEmpty()]
-        [string[]]$ompfiles,
-        [switch]$dryrun,
-        [switch]$force
-    )
-
-    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\UploadsWithImport" -DryRun $dryrun -Force $force -TailLog $true
-}
-
-<#
-.SYNOPSIS
-Opens a WebSphere profile path
-.DESCRIPTION
-Opens a WebSphere profile path in your default file browser application
-.PARAMETER environment
-The TRIRIGA environment name to access. Run `Tririga-Environments` to see known environments.
-.PARAMETER instance
-The TRIRIGA instance within the environment to access. Run `Tririga-Instances` to see known instances.
-#>
-function Open-WasFolder() {
-    param(
-        # The TRIRIGA environment to use.
-        [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [ValidateNotNullOrEmpty()]
-        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
-        # The instance to update. If omitted, all instances are updated.
-        [string]$instance = $env:TRIRIGA_INSTANCE
-    )
-
-    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
-
-    if ($instances) {
-        ForEach($inst in $instances) {
-            $wasRoot = GetUncPath -server $inst["Host"] -path $inst["WebSphere"]
-            Invoke-Item $wasRoot
         }
     }
 }
