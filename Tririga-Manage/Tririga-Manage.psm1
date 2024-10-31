@@ -478,7 +478,7 @@ function Disable-Service() {
 
     if ($instances) {
         if ($instances.Count -gt 1) {
-            Write-Warning "All $environment instances will be restarted"
+            Write-Warning "All $environment instances will be disabled"
         }
         ForEach($inst in $instances) {
             $tririgaInstName = $inst["Instance"]
@@ -518,7 +518,7 @@ function Enable-Service() {
 
     if ($instances) {
         if ($instances.Count -gt 1) {
-            Write-Warning "All $environment instances will be restarted"
+            Write-Warning "All $environment instances will be enabled"
         }
         ForEach($inst in $instances) {
             $tririgaInstName = $inst["Instance"]

@@ -61,46 +61,6 @@ function HasPager() {
     }
 }
 
-function DumpJson() {
-    param(
-       [boolean]$raw = $false
-    )
-
-    Write-Verbose "Return as raw object"
-
-    if ($raw) {
-        return $input
-    } else {
-        if(HasPager) {
-            Write-Verbose "Json to pager"
-            $input | ConvertTo-Json -Depth 100 | bat --style plain --language json
-        } else {
-            Write-Verbose "Just print json"
-            $input | ConvertTo-Json -Depth 100 | Out-Host
-        }
-    }
-}
-
-function DumpCsv() {
-    param(
-       [boolean]$raw = $false
-    )
-
-    Write-Verbose "Return as raw object"
-
-    if ($raw) {
-        return $input
-    } else {
-        if(HasPager) {
-            Write-Verbose "CSV to pager"
-            $input | ConvertTo-Csv | bat --style plain --language csv
-        } else {
-            Write-Verbose "Just print CSV"
-            $input | ConvertTo-Csv | Out-Host
-        }
-    }
-}
-
 function CallTririgaApiRaw() {
     param(
         [Parameter(Mandatory)]
@@ -268,14 +228,10 @@ function CallTririgaApi() {
 
             $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaEnvironment.username -password $tririgaEnvironment.password
 
-            $currentEnv = @{
-                "Environment" = $environment
-                "Instance" = $inst
-            }
 
             # TODO: Only do this of the result is PSObject
             if (!$noTag) {
-                $result = $result | Add-Member -PassThru tririgaEnvironment $currentEnv
+                $result | Add-Member -PassThru environment $environment | Add-Member -PassThru instance $inst
             }
             # Tag with environment info
             #$result = $result | Add-Member -PassThru environment $environment
@@ -331,7 +287,7 @@ function Get-BuildNumber() {
         ApiPath = "/api/v1/admin/buildNumber"
     }
 
-    CallTririgaApi @apiCall | DumpJson -Raw $raw
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -371,7 +327,7 @@ function Get-Summary() {
         OnlyOnAnyOneInstance = $true
     }
 
-    CallTririgaApi @apiCall | DumpJson -Raw $raw
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -397,8 +353,10 @@ function Get-Agents() {
         # If provided, only lists the given agent.
         [Parameter(Position=1)]
         [string]$agent,
-        # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
-        [switch]$raw = $false
+        # If set, only list agents that are running
+        [switch]$running,
+        # If set, only list agents that are not running
+        [switch]$notRunning
     )
 
     $agentArg = ""
@@ -415,7 +373,20 @@ function Get-Agents() {
         NoTag = $true
     }
 
-    CallTririgaApi @apiCall | DumpJson -Raw $raw
+    $result = CallTririgaApi @apiCall
+
+    foreach ($property in $result.PSObject.Properties)
+    {
+        if($running -and $property.Value.Status -ne "Running") { continue }
+        if($notRunning -and $property.Value.Status -ne "Not Running") { continue }
+
+        New-Object PSObject -Property @{
+            "ID" = $property.Value.startupId;
+            "Agent" = $property.Value.agent;
+            "Hostname" = $property.Value.hostname;
+            "Status" = $property.Value.status;
+        };
+    }
 }
 
 <#
@@ -449,16 +420,20 @@ function Get-AgentHost() {
         [Parameter(Mandatory, Position=1)]
         [string]$agent,
         # If set, only list the host when the agent is running
-        [switch]$running
+        [switch]$running,
+        # If set, only list the host when the aget is not running
+        [switch]$notRunning
     )
 
-    $agents = Get-Agents -Environment $environment -Instance $instance -Agent $agent -Raw
-
-    foreach ($property in $agents.PSObject.Properties)
-    {
-        if($running -and $property.Value.Status -ne "Running") { continue }
-        $property.Value.hostname
+    $agentCall = @{
+        Environment = $environment
+        Instance = $instance
+        Agent = $agent
+        Running = $running
+        NotRunning = $notRunning
     }
+
+    Get-Agents @agentCall | ForEach-Object { $_.Hostname }
 }
 
 
@@ -472,10 +447,10 @@ Not all listed users have active access. They are in the Admin group an can be g
 
 Uses /api/v1/admin/users/list method
 .EXAMPLE
-PS> Get-AdminUsers LOCAL -Active -Raw | Format-Table
-userId fullName       username adminSummary
------- --------       -------- ------------
-221931 System System  system           True
+PS> Get-TririgaAdminUsers LOCAL | Where-Object fullaccess -eq True
+userId fullaccess username fullName
+------ ---------- -------- --------
+221931       True system   System System
 #>
 function Get-AdminUsers() {
     [CmdletBinding()]
@@ -488,11 +463,7 @@ function Get-AdminUsers() {
         # The TRIRIGA instance within the environment to use.
         # If omitted, command will act on the first instance.
         [Alias("Inst", "I")]
-        [string]$instance,
-        # If set, only show users with active access
-        [switch]$active = $false,
-        # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
-        [switch]$raw = $false
+        [string]$instance
     )
 
     $apiCall = @{
@@ -503,13 +474,17 @@ function Get-AdminUsers() {
         OnlyOnAnyOneInstance = $true
     }
 
-    # TODO: Check all access attributes and create a new "allAccess" attribute
+    CallTririgaApi @apiCall `
+    | ForEach-Object { $_ | Add-Member -PassThru "fullaccess" ( `
+        $_.adminSummary -and $_.adminUsers -and $_.agents -and $_.buildNumber -and `
+        $_.caches -and $_.databaseInfo -and $_.databaseQueryTool -and $_.dataConnect -and `
+        $_.errorLogs -and $_.javaInfo -and $_.licenses -and $_.maintenanceSchedule -and `
+        $_.metadataAnalysis -and $_.performanceMonitor -and $_.platformLogging -and `
+        $_.schedulerInfo -and $_.systemInfo -and $_.threadSettings -and $_.usersLoggedIn `
+        -and $_.workflowAgentInfo -and $_.workflowEvents -and $_.workflowExecuting `
+        -and $_.mustGatherTool ) } `
+    | ForEach-Object { New-Object PSObject -Property @{ "userId" = $_.userId; "fullName" = $_.fullName; "username" = $_.username; "fullaccess" = $_.fullaccess; }; }
 
-    if ($active) {
-        CallTririgaApi @apiCall | Where-Object { $_.adminSummary -eq "True" } | select-object userId,fullName,username,adminSummary | DumpCsv -Raw $raw
-    } else {
-        CallTririgaApi @apiCall | select-object userId,fullName,username,adminSummary | DumpCsv -Raw $raw
-    }
 }
 
 <#
@@ -517,6 +492,8 @@ function Get-AdminUsers() {
 Gets a list of currently logged in users
 .DESCRIPTION
 Gets a list of currently logged in users
+.EXAMPLE
+PS> Get-TririgaActiveUsers LOCAL | ft
 #>
 function Get-ActiveUsers() {
     [CmdletBinding()]
@@ -542,23 +519,25 @@ function Get-ActiveUsers() {
         ApiPath = "/api/v1/admin/activeUsers/list"
     }
 
-    $resultHash = (CallTririgaApi @apiCall | ConvertFrom-Json -AsHashTable)
+    $resultHash = (CallTririgaApi @apiCall).Replace('eMail', 'email1') | ConvertFrom-Json
+
+    $now = Get-Date -AsUTC
 
     foreach($item in $resultHash)
     {
         # Only PS 7+
         #$item["lastTouch"] = (Get-Date -UnixTimeSeconds (([long]$item["lastTouchDateTime"]) / 1000) -AsUTC)
 
-        $unixTime = (([long]$item["lastTouchDateTime"]) / 1000)
-        $item["lastTouch"] = (([System.DateTimeOffset]::FromUnixTimeSeconds($unixTime)).DateTime).ToString("s")
+        $unixTime = (([long]$item.lastTouchDateTime) / 1000)
+        $item | Add-Member lastTouch ((([System.DateTimeOffset]::FromUnixTimeSeconds($unixTime)).DateTime).ToString("s"))
+        $item | Add-Member lastTouchDuration ("{0:dd}d:{0:hh}h:{0:mm}m:{0:ss}s" -f (New-TimeSpan –Start $item.lastTouch –End $now))
     }
 
-    if ($raw) {
+
+    if($raw) {
         $resultHash
     } else {
-        $resultHash `
-        | Select-object userId,fullName,userAccount,loggedIn,ipAddress,lastTouch `
-        | Format-Table
+        $resultHash | Select-Object userAccount,fullName,email,lastTouchDuration
     }
 
 }
@@ -621,7 +600,15 @@ function Stop-Agent() {
             OnlyOnAnyOneInstance = $true
         }
 
-        CallTririgaApi @stopApiCall | DumpJson
+        $result = CallTririgaApi @stopApiCall
+
+        # Some values are in single-item arrays. Flatten it and replace the values
+        $result `
+        | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
+        | Add-Member -PassThru "agentname" $agent -Force `
+        | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
+        | Add-Member -PassThru "status" ($result.status -Join ",") -Force
+
     }
 }
 
@@ -673,7 +660,7 @@ function Start-Agent() {
             $agentHost = "localhost"
         }
 
-        $stopApiCall = @{
+        $startApiCall = @{
             Environment = $environment
             Instance = $instance
             ApiMethod = "POST"
@@ -681,7 +668,15 @@ function Start-Agent() {
             OnlyOnAnyOneInstance = $true
         }
 
-        CallTririgaApi @stopApiCall | DumpJson
+        $result = CallTririgaApi @startApiCall
+
+        # Some values are in single-item arrays. Flatten it and replace the values
+        $result `
+        | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
+        | Add-Member -PassThru "agentname" $agent -Force `
+        | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
+        | Add-Member -PassThru "status" ($result.status -Join ",") -Force
+
     }
 }
 
@@ -709,9 +704,7 @@ function Set-WorkflowInstance() {
         # The value to set.
         [ValidateSet("ALWAYS", "ERRORS_ONLY", "PER_WORKFLOW_ALWAYS", "PER_WORKFLOW_PRODUCTION", "DATA_LOAD")]
         [Parameter(Mandatory, Position=1)]
-        [string]$value,
-        # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
-        [boolean]$raw = $false
+        [string]$value
     )
 
 
@@ -722,7 +715,7 @@ function Set-WorkflowInstance() {
         ApiPath = "/api/v1/admin/workflowAgentInfo/workflowInstance/update?instanceName=$value"
     }
 
-    CallTririgaApi @apiCall | DumpJson -Raw $raw
+    CallTririgaApi @apiCall
 
 }
 
@@ -746,12 +739,10 @@ function Enable-WorkflowInstance() {
         # If omitted, command will act on all instances.
         [Alias("Inst", "I")]
         [Parameter()]
-        [string]$instance,
-        # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
-        [switch]$raw = $false
+        [string]$instance
     )
 
-    Set-WorkflowInstance -Environment $environment -Value "ALWAYS" -Instance $instance -Raw $raw
+    Set-WorkflowInstance -Environment $environment -Value "ALWAYS" -Instance $instance
 }
 
 <#
@@ -774,12 +765,10 @@ function Disable-WorkflowInstance() {
         # If omitted, command will act on all instances.
         [Alias("Inst", "I")]
         [Parameter()]
-        [string]$instance,
-        # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
-        [switch]$raw = $false
+        [string]$instance
     )
 
-    Set-WorkflowInstance -Environment $environment -Value "ERRORS_ONLY" -Instance $instance -Raw $raw
+    Set-WorkflowInstance -Environment $environment -Value "ERRORS_ONLY" -Instance $instance
 }
 
 

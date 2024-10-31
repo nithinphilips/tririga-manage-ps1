@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+v4.2.0
+------
+* All Rest commands now output native powershell objects.
+* ``Get-TririgaActiveUsers`` now works in PowerShell 5.1
+
 v4.1.0
 ------
 * Remove support for environment variables because the validation did not

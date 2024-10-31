@@ -39,7 +39,7 @@ ChangeLog.%.md: ChangeLog.md
 	pwsh -Command "\$$env:PSModulePath = (Resolve-Path .).Path; Get-Command -Module $* | % {\$$h=(Get-Help \$$_.Name); if(\$$_.CommandType -eq \"Alias\") {Add-Member -Force -InputObject \$$h "Name" \$$_.Name}; \$$h} | Select-Object Name,Synopsis | Export-CSV $*.csv"
 
 all-docs.csv: Tririga-Manage.csv Tririga-Manage-Rest.csv
-	mlr --icsv --ocsv cat then sort -f Name then clean-whitespace $^ > $@
+	mlr --icsv --ocsv cat then put '$$SortName = splitax($$Name, "-")[2]' then sort -f SortName then cut -x -f SortName then clean-whitespace $^ > $@
 
 $(DISTROOT)/$(DISTZIP): update-module update-readme $(DIST_EXTRAS) $(PSFILES)
 	mkdir -p $(DISTDIR) $(DISTDIR)/Tririga-Manage/$(VERSION) $(DISTDIR)/Tririga-Manage-Rest/$(VERSION)
@@ -94,6 +94,8 @@ release: update-module dist ChangeLog.$(GIT_TAG).md release-check ## Releases th
 	printf "\e[1;38:5:40m✓\e[0m Uploaded file $(DISTZIP) to release $(GIT_TAG)\n"
 	pwsh Install.ps1 -Publish -NoInstallModule -NuGetApiKey $(GITEA_API_TOKEN)
 	printf "\e[1;38:5:40m✓\e[0m Published package to Gitea NuGet repository\n"
+	pwsh Install.ps1 -PublishPSGallery -NoInstallModule -NuGetApiKey $(PSGALLERY_API_TOKEN)
+	printf "\e[1;38:5:40m✓\e[0m Published package to PowerShell Gallery\n"
 
 publish: dist # Published the dist file to Amazon AWS
 	aws s3 cp "$(DISTROOT)/$(DISTZIP)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(DISTZIP)"

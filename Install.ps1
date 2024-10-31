@@ -1,9 +1,10 @@
 #!/usr/bin/env pwsh
 param(
-    [string]$version="4.1.0",
+    [string]$version="4.2.0",
     [switch]$updateModule,
     [switch]$noInstallModule,
     [switch]$publish,
+    [switch]$PublishPSGallery,
     [string]$nuGetApiKey
 )
 
@@ -83,4 +84,13 @@ if ($publish) {
     $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -Repository Gitea -NuGetApiKey $nuGetApiKey; Write-Host "Published module $_" }
 }
 
+
+if ($publishPSgallery) {
+    if(!$nuGetApiKey) {
+        Write-Error '-NugetApiKey is required when -Publish switch is set'
+        exit 1
+    }
+
+    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -NuGetApiKey $nuGetApiKey; Write-Host "Published module $_" }
+}
 

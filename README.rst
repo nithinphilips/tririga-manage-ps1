@@ -30,8 +30,7 @@ The commands are self-documenting. The see the latest help, run:
 
 .. code:: ps1
 
-    Get-Command -Module Tririga-Manage | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Format-Table
-    Get-Command -Module Tririga-Manage-Rest | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Format-Table
+    Get-Command -Module Tririga-Manage* | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Format-Table
 
 To see detailed help for a command, run:
 
@@ -81,39 +80,39 @@ Available Commands
     :stub-columns: 1
 
     Name,Synopsis
-    Disable-TririgaService,Disables TRIRIGA service
-    Disable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ERRORS_ONLY
-    Enable-TririgaService,Enables TRIRIGA service
-    Enable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ALWAYS
-    Enter-TririgaHost,Starts a remote powershell session to a TRIRIGA instance
     Get-TririgaActiveUsers,Gets a list of currently logged in users
     Get-TririgaAdminUsers,Gets a list of users who can access the TRIRIGA Admin Console
+    Start-TririgaAgent,Starts a TRIRIGA agent
+    Stop-TririgaAgent,Stops a TRIRIGA agent
     Get-TririgaAgentHost,Gets the configured host(s) for the given agent
     Get-TririgaAgents,Gets TRIRIGA Agents configuration
     Get-TririgaBuildNumber,Gets TRIRIGA build number
+    Open-TririgaDatabase,Opens Dbeaver and connects to the TRIRIGA database
     Get-TririgaEnvironments,Gets all known environments
+    Open-TririgaFolder,Opens a TRIRIGA installation directory path
+    Enter-TririgaHost,Starts a remote powershell session to a TRIRIGA instance
     Get-TririgaInstances,Gets all known instances in a given environment
     Get-TririgaLog,Tails a TRIRIGA log file
+    Open-TririgaLog,Opens a TRIRIGA log file
+    Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
+    Import-TririgaOmp,Uploads and imports a local OMP zip file to TRIRIGA
+    Save-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
+    Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
+    Disable-TririgaService,Disables TRIRIGA service
+    Enable-TririgaService,Enables TRIRIGA service
+    Restart-TririgaService,Restarts TRIRIGA service
+    Start-TririgaService,Starts TRIRIGA service
+    Stop-TririgaService,Stops TRIRIGA service
     Get-TririgaStatus,Get the current status of TRIRIGA service
     Get-TririgaSummary,Gets basic information about a TRIRIGA instance
-    Get-TririgaWasLog,Tails a WebSphere log file
-    Import-TririgaOmp,Uploads and imports a local OMP zip file to TRIRIGA
-    Open-TririgaDatabase,Opens Dbeaver and connects to the TRIRIGA database
-    Open-TririgaFolder,Opens a TRIRIGA installation directory path
-    Open-TririgaLog,Opens a TRIRIGA log file
-    Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
     Open-TririgaWasFolder,Opens a WebSphere profile path
+    Get-TririgaWasLog,Tails a WebSphere log file
     Open-TririgaWasLog,Opens a WebSphere log file
     Open-TririgaWasWeb,Opens the WebSphere Admin Console
     Open-TririgaWeb,Opens a TRIRIGA environment
-    Restart-TririgaService,Restarts TRIRIGA service
-    Save-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
+    Disable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ERRORS_ONLY
+    Enable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ALWAYS
     Set-TririgaWorkflowInstance,Updates workflow instance recording setting
-    Start-TririgaAgent,Starts a TRIRIGA agent
-    Start-TririgaService,Starts TRIRIGA service
-    Stop-TririgaAgent,Stops a TRIRIGA agent
-    Stop-TririgaService,Stops TRIRIGA service
-    Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
 .. ##END TABLE
 
 Installation
