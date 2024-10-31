@@ -69,20 +69,19 @@ PowerShellVersion = '5.1'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-TririgaBuildNumber', 'Get-TririgaSummary', 'Get-TririgaAgents', 
-               'Get-TririgaAgentHost', 'Get-TririgaAdminUsers', 
-               'Get-TririgaActiveUsers', 'Stop-TririgaAgent', 'Start-TririgaAgent', 
-               'Set-TririgaWorkflowInstance', 'Enable-TririgaWorkflowInstance', 
-               'Disable-TririgaWorkflowInstance'
+FunctionsToExport = 'Get-BuildNumber', 'Get-Summary', 'Get-Agents', 'Get-AgentHost', 
+               'Get-AdminUsers', 'Get-ActiveUsers', 'Stop-Agent', 'Start-Agent', 
+               'Set-WorkflowInstance', 'Enable-WorkflowInstance', 
+               'Disable-WorkflowInstance'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+CmdletsToExport = '*'
 
 # Variables to export from this module
 VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+AliasesToExport = '*'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -130,7 +129,7 @@ PrivateData = @{
 # HelpInfoURI = ''
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-# DefaultCommandPrefix = ''
+DefaultCommandPrefix = 'Tririga'
 
 }
 

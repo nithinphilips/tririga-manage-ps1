@@ -1,1 +1,3 @@
 dist/
+environments.ps1
+*.docx

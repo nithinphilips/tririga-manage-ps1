@@ -1,9 +1,11 @@
 param(
-    [switch]$develop,
     [switch]$publish,
     [string]$version="3.0.0",
-    [string]$nuGetApiKey
+    [string]$nuGetApiKey,
+    [switch]$noInstallModule
 )
+
+$modules = @("Tririga-Manage", "Tririga-Manage-Rest")
 
 # Set active path to script-location:
 $path = $MyInvocation.MyCommand.Path
@@ -27,7 +29,7 @@ Function Update-Module() {
     }
 
     $functionNames = $functionNames | Where-Object { $_.Contains("-") }
-    Write-Host "Using functions: $functionNames"
+    Write-Host "[$moduleName] Export functions: $functionNames"
 
     $modulePath = (Resolve-Path "$moduleName\$moduleName.psd1").Path
 
@@ -40,45 +42,35 @@ Function Update-Module() {
     Update-ModuleManifest @Params
 }
 
-if ($develop -or $publish) {
-    Write-Host "==> Update Module definition files"
-    Update-Module "Tririga-Manage"
-    Update-Module "Tririga-Manage-Rest"
-}
+Write-Host "==> Update Module definition files"
+$modules | ForEach-Object { Update-Module $_ }
 
 $profileDir = Split-Path $Profile -Parent
 $moduleDir = Join-Path $profileDir "Modules"
 
-Write-Host "==> Install Modules to $moduleDir"
-New-Item -Type Directory -Path $moduleDir -Force | Out-Null
-Copy-Item -Recurse -Force -Path * -Destination $moduleDir
+if (!$noInstallModule) {
+    Write-Host "==> Install Modules to $moduleDir"
+    New-Item -Type Directory -Path $moduleDir -Force | Out-Null
+    $modules | ForEach-Object { Copy-Item -Recurse -Force -Path $_ -Destination $moduleDir; Write-Host "Installed module $_" }
+}
 
 Write-Host "==> Update Profile at $Profile"
-$thisFile = $MyInvocation.MyCommand.Path
-if (!$thisFile) {$thisFile = $psISE.CurrentFile.Fullpath}
-if ($thisFile)  {$path = Split-Path $thisFile -Parent}
-$environmentsFile = Join-Path $path "environments.ps1"
+$environmentsFile = Join-Path $profileDir "environments.ps1"
 
 # TODO: Copy environments.ps1 to profile dir (if not already one there) and source that.
 
 If (!(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
 {
+    if (!(Test-Path -Path $environmentsFile)) {
+        Copy-Item environments.sample.ps1 $environmentsFile
+        Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
+    }
+
     echo "Installing this script to your PowerShell profile $Profile"
     "`$TririgaEnvironments = (Get-Content `"$environmentsFile`" | Out-String | Invoke-Expression)" | Out-file "$Profile" -append
     "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
 } else {
-    echo "Already configured"
-}
-
-if ($develop) {
-    Import-Module Tririga-Manage -Force
-    Import-Module Tririga-Manage-Rest -Force
-    Get-Command -Module Tririga-Manage | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Export-CSV tririga-manage.csv
-    Get-Command -Module Tririga-Manage-Rest | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Export-CSV tririga-manage-rest.csv
-
-    mlr --icsv --ocsv cat then clean-whitespace tririga-manage.csv tririga-manage-rest.csv > tririga-manage-ps1.csv
-    Remove-Item tririga-manage.csv
-    Remove-Item tririga-manage-rest.csv
+    echo "Profile already configured"
 }
 
 if ($publish) {
@@ -87,7 +79,6 @@ if ($publish) {
         exit 1
     }
 
-    Publish-Module -Name Tririga-Manage\Tririga-Manage.psd1 -Repository Gitea -Verbose -NuGetApiKey $nuGetApiKey
-    Publish-Module -Name Tririga-Manage-Rest\Tririga-Manage-Rest.psd1 -Repository Gitea -Verbose -NuGetApiKey $nuGetApiKey
+    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -Repository Gitea -Verbose -NuGetApiKey $nuGetApiKey; Write-Host "Published module $_" }
 }
 

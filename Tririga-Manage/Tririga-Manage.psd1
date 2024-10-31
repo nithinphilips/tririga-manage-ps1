@@ -69,21 +69,20 @@ PowerShellVersion = '5.1'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Tririga-Environments', 'Tririga-Instances', 'Tririga-Status', 
-               'Tririga-Start', 'Tririga-Stop', 'Tririga-Restart', 'Tririga-Disable', 
-               'Tririga-Enable', 'Tririga-Db', 'Tririga-Log', 'Tririga-Log-Open', 
-               'Was-Log', 'Was-Log-Open', 'Tririga-Enter', 'Tririga-Open', 'Was-Open', 
-               'Tririga-RDP', 'Tririga-Browse', 'Tririga-Upload-Omp', 
-               'Tririga-Import-Omp', 'Was-Browse'
+FunctionsToExport = 'Get-Environments', 'Get-Instances', 'Get-Status', 'Start-Service', 
+               'Stop-Service', 'Restart-Service', 'Disable-Service', 'Enable-Service', 
+               'Open-Database', 'Get-Log', 'Open-Log', 'Get-WasLog', 'Open-WasLog', 
+               'Enter-Host', 'Open-Web', 'Open-WasWeb', 'Open-RDP', 'Open-Folder', 
+               'Upload-Omp', 'Import-Omp', 'Open-WasFolder'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-CmdletsToExport = @()
+CmdletsToExport = '*'
 
 # Variables to export from this module
 VariablesToExport = '*'
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = @()
+AliasesToExport = '*'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
@@ -131,7 +130,7 @@ PrivateData = @{
 # HelpInfoURI = ''
 
 # Default prefix for commands exported from this module. Override the default prefix using Import-Module -Prefix.
-# DefaultCommandPrefix = ''
+DefaultCommandPrefix = 'Tririga'
 
 }
 

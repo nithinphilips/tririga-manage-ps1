@@ -305,7 +305,7 @@ Gets TRIRIGA build number
 
 Uses the /api/v1/admin/buildNumber method
 #>
-function Get-TririgaBuildNumber() {
+function Get-BuildNumber() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -336,12 +336,12 @@ Gets basic information about a TRIRIGA instance
 
 Uses the /api/v1/admin/summary method
 .EXAMPLE
-PS> Get-Tririga-Summary Local -Raw | Select-Object databaseConnection
+PS> Get-Summary Local -Raw | Select-Object databaseConnection
 databaseConnection
 ------------------
 jdbc:oracle:thin:@localhost:1521/XEPDB1
 #>
-function Get-TririgaSummary() {
+function Get-Summary() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -373,7 +373,7 @@ Gets TRIRIGA Agents configuration
 
 Uses the /api/v1/admin/agent/status method
 #>
-function Get-TririgaAgents() {
+function Get-Agents() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -410,14 +410,14 @@ Gets the configured host(s) for the given agent(s)
 
 Uses the /api/v1/admin/agent/status method
 .EXAMPLE
-PS> Get-Tririga-Agent-Host -Environment LOCAL -Agent WFAgent | ForEach-Object { Write-Host "WFAgent is configured on $_" }
+PS> Get-AgentHost -Environment LOCAL -Agent WFAgent | ForEach-Object { Write-Host "WFAgent is configured on $_" }
 WFAgent is configured on localhost
 WFAgent is configured on somewhere
 .EXAMPLE
-PS> Get-Tririga-Agent-Host -Environment LOCAL -Agent WFAgent | ForEach-Object { Write-Host "WFAgent is running on $_" }
+PS> Get-AgentHost -Environment LOCAL -Agent WFAgent | ForEach-Object { Write-Host "WFAgent is running on $_" }
 WFAgent is running on localhost
 #>
-function Get-TririgaAgentHost() {
+function Get-AgentHost() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -426,11 +426,11 @@ function Get-TririgaAgentHost() {
         # If provided, only lists the given agent.
         [Parameter(Mandatory)]
         [string]$agent,
-        # Set the type of agent to query. Run 'Get-Tririga-Agents' to see a list of all possible agent types.
+        # Set the type of agent to query. Run 'Get-Agents' to see a list of all possible agent types.
         [switch]$running
     )
 
-    $agents = Get-TririgaAgents -Environment $environment -Agent $agent -Raw
+    $agents = Get-Agents -Environment $environment -Agent $agent -Raw
 
     foreach ($property in $agents.PSObject.Properties)
     {
@@ -450,12 +450,12 @@ Not all listed users have active access. They are in the Admin group an can be g
 
 Uses /api/v1/admin/users/list method
 .EXAMPLE
-PS> Get-Tririga-AdminUsers LOCAL -Active -Raw | Format-Table
+PS> Get-AdminUsers LOCAL -Active -Raw | Format-Table
 userId fullName       username adminSummary
 ------ --------       -------- ------------
 221931 System System  system           True
 #>
-function Get-TririgaAdminUsers() {
+function Get-AdminUsers() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -489,7 +489,7 @@ Gets a list of currently logged in users
 .DESCRIPTION
 Gets a list of currently logged in users
 #>
-function Get-TririgaActiveUsers() {
+function Get-ActiveUsers() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -538,7 +538,7 @@ Stops a TRIRIGA agent
 
 Uses the /api/v1/admin/agent/stop method
 #>
-function Stop-TririgaAgent() {
+function Stop-Agent() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -594,7 +594,7 @@ Starts a TRIRIGA agent
 
 Uses the /api/v1/admin/agent/start method
 #>
-function Start-TririgaAgent() {
+function Start-Agent() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -648,7 +648,7 @@ Updates workflow instance recording setting
 
 Uses the /api/v1/admin/workflowAgentInfo/workflowInstance/update method
 #>
-function Set-TririgaWorkflowInstance() {
+function Set-WorkflowInstance() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -683,7 +683,7 @@ Sets the workflow instance recording setting to ALWAYS
 
 Uses the /api/v1/admin/workflowAgentInfo/workflowInstance/update method
 #>
-function Enable-TririgaWorkflowInstance() {
+function Enable-WorkflowInstance() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
@@ -695,7 +695,7 @@ function Enable-TririgaWorkflowInstance() {
         [switch]$raw = $false
     )
 
-    Set-TririgaWorkflowInstance -Environment $environment -Value "ALWAYS" -Instance $instance -Raw $raw
+    Set-WorkflowInstance -Environment $environment -Value "ALWAYS" -Instance $instance -Raw $raw
 }
 
 <#
@@ -706,18 +706,17 @@ Sets the workflow instance recording setting to ERRORS_ONLY
 
 Uses the /api/v1/admin/workflowAgentInfo/workflowInstance/update method
 #>
-function Disable-TririgaWorkflowInstance() {
+function Disable-WorkflowInstance() {
     param(
         # The TRIRIGA environment to use.
         [Parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true, Position=1)]
-        [Parameter(Mandatory)]
-        [string]$environment,
+        [ValidateNotNullOrEmpty()]
+        [string]$environment = $env:TRIRIGA_ENVIRONMENT,
         # The instance to update. If omitted, all instances are updated.
         [string]$instance = $env:TRIRIGA_INSTANCE,
         # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
         [switch]$raw = $false
     )
 
-    Set-TririgaWorkflowInstance -Environment $environment -Value "ERRORS_ONLY" -Instance $instance -Raw $raw
-
+    Set-WorkflowInstance -Environment $environment -Value "ERRORS_ONLY" -Instance $instance -Raw $raw
 }

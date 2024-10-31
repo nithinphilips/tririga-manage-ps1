@@ -7,6 +7,12 @@ using the TRIRIGA REST management API.
 
 The commands allow you to refer to your instances by [Environment] [Instance] (eg: DEV NS1).
 
+Features
+--------
+* Simple way to refer to instances
+* Operate on all instances in an environment at once
+* Warning and count down when working on production instances
+
 Requirements
 ------------
 * Windows Powershell 5.x or PowerShell 7.x
@@ -39,49 +45,56 @@ To see detailed help, run:
 .. Get-Command -Module Tririga-Manage-Rest | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Export-CSV tririga-manage-rest.csv
 .. mlr --icsv --ocsv cat then clean-whitespace tririga-manage.csv tririga-manage-rest.csv
 
+.. ##BEGIN TABLE
 .. csv-table::
     :header-rows: 1
     :stub-columns: 1
 
     Name,Synopsis
-    Tririga-Browse,Opens a TRIRIGA installation directory path
-    Tririga-Db,Connects to the TRIRIGA database
-    Tririga-Disable,Disables TRIRIGA service
-    Tririga-Enable,Enables TRIRIGA service
-    Tririga-Enter,Starts a remote powershell session to a server
-    Tririga-Environments,Prints all known environments
-    Tririga-Import-Omp,Uploads and imports a local OMP zip file to TRIRIGA
-    Tririga-Instances,Prints all known instances in a given environment
-    Tririga-Log,Tails a TRIRIGA log file
-    Tririga-Log-Open,Opens a TRIRIGA log file
-    Tririga-Open,Opens a TRIRIGA environment
-    Tririga-RDP,Opens an RDP client connection to the TRIRIGA server
-    Tririga-Restart,Restarts TRIRIGA service
-    Tririga-Start,Starts TRIRIGA service
-    Tririga-Status,Get the current status of TRIRIGA service
-    Tririga-Stop,Stops TRIRIGA service
-    Tririga-Upload-Omp,Uploads a local OMP zip file to TRIRIGA
-    Was-Browse,Opens a WebSphere profile path
-    Was-Log,Tails a WebSphere log file
-    Was-Log-Open,Opens a WebSphere log file
-    Was-Open,Opens the WebSphere Admin Console
+    Disable-TririgaService,Disables TRIRIGA service
+    Disable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ERRORS_ONLY
+    Enable-TririgaService,Enables TRIRIGA service
     Enable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ALWAYS
+    Enter-TririgaHost,Starts a remote powershell session to a server
     Get-TririgaActiveUsers,Gets a list of currently logged in users
     Get-TririgaAdminUsers,Gets a list of users who can access the TRIRIGA Admin Console
     Get-TririgaAgentHost,Gets the configured host(s) for the given agent(s)
     Get-TririgaAgents,Gets TRIRIGA Agents configuration
     Get-TririgaBuildNumber,Gets TRIRIGA build number
+    Get-TririgaEnvironments,Prints all known environments
+    Get-TririgaInstances,Prints all known instances in a given environment
+    Get-TririgaLog,Tails a TRIRIGA log file
+    Get-TririgaStatus,Get the current status of TRIRIGA service
     Get-TririgaSummary,Gets basic information about a TRIRIGA instance
+    Get-TririgaWasLog,Tails a WebSphere log file
+    Import-TririgaOmp,Uploads and imports a local OMP zip file to TRIRIGA
+    Open-TririgaDatabase,Connects to the TRIRIGA database
+    Open-TririgaFolder,Opens a TRIRIGA installation directory path
+    Open-TririgaLog,Opens a TRIRIGA log file
+    Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
+    Open-TririgaWasFolder,Opens a WebSphere profile path
+    Open-TririgaWasLog,Opens a WebSphere log file
+    Open-TririgaWasWeb,Opens the WebSphere Admin Console
+    Open-TririgaWeb,Opens a TRIRIGA environment
+    Restart-TririgaService,Restarts TRIRIGA service
     Set-TririgaWorkflowInstance,Updates workflow instance recording setting
     Start-TririgaAgent,Starts a TRIRIGA agent
+    Start-TririgaService,Starts TRIRIGA service
     Stop-TririgaAgent,Stops a TRIRIGA agent
+    Stop-TririgaService,Stops TRIRIGA service
+    Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
+.. ##END TABLE
 
+Usage
+-----
+All commands accept a ``-Environment`` argument. You can also set the
+environment variable ``$env:TRIRIGA_ENVIRONMENT`` to provide it.
 
-Features
---------
-* Simple way to refer to instances
-* Operate on all instances in an environment at once
-* Warning and count down when working on production instances
+Some commands require a ``-Instance`` argument or optionally accept it. When it
+is optional and omitted, action will be performed on all instances in the
+environment.
+
+If ``$env:TRIRIGA_INSTANCE`` environment variable is set it will be used.
 
 Installation
 ------------
@@ -106,18 +119,27 @@ From Source
 
 Development
 -----------
-To Install Module while developing::
+To load the module from the current directory:
 
-    watchexec .\Install.ps1 -develop
+.. code:: ps1
 
-To see debug log messages, set ``$VerbosePreference = "Continue"``
+    $env:PSModulePath = "$(Resolve-Path .)" + [IO.Path]::PathSeparator + $env:PSModulePath
+
+To Install Module::
+
+    .\Install.ps1
+
+To see debug log messages, set:
+
+.. code:: ps1
+
+    $VerbosePreference = "Continue"
 
 To Force reload of module in current session:
 
 .. code:: ps1
 
-    Import-Module Tririga-Manage-Rest -Force
-    Import-Module Tririga-Manage -Force
+    Import-Module Tririga-Manage-Rest -Force; Import-Module Tririga-Manage -Force
 
 Publish
 -------
