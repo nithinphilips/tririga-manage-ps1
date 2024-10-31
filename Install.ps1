@@ -15,7 +15,6 @@ if ($path)  {$path = Split-Path $path -Parent}
 Set-Location $path
 
 # Check $Env:PSModulePath to see the default search locations
-
 Function Update-ModuleManifestFilesForInstall() {
     param(
         [Parameter(Mandatory)]

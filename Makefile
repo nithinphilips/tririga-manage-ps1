@@ -89,7 +89,7 @@ release: dist ChangeLog.$(GIT_TAG).md release-check ## Releases the current vers
 	#-tea release assets delete --confirm $(GIT_TAG) $(NATIVE_DISTZIP)
 	tea release assets create $(GIT_TAG) $(DISTROOT)/$(DISTZIP)
 	printf "\e[1;38:5:40m✓\e[0m Uploaded file $(DISTZIP) to release $(GIT_TAG)\n"
-	pwsh -Command "& Install.ps1 -Publish -NoInstallModule -NuGetApiKey $(GITEA_API_TOKEN) -Verbose"
+	pwsh Install.ps1 -Publish -NoInstallModule -NuGetApiKey $(GITEA_API_TOKEN)
 	printf "\e[1;38:5:40m✓\e[0m Published package to Gitea NuGet repository\n"
 
 publish: dist # Published the dist file to Amazon AWS
