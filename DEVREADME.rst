@@ -19,6 +19,19 @@ To see debug log messages, set:
 
     $VerbosePreference = "Continue"
 
+To run tests:
+
+.. code:: ps1
+
+    Invoke-Pester
+
+Check for script issues:
+
+.. code:: ps1
+
+    Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage | ft -AutoSize
+    Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage-Rest | ft -AutoSize
+
 Parameter Handling
 ------------------
 We have commands that:

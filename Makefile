@@ -74,36 +74,66 @@ update-readme: all-docs.tmp environments.sample.psd1.tmp
 
 dist: $(DISTROOT)/$(DISTZIP)
 
-release-check:
+create-tag:
+	git tag v$(VERSION)
+
+release-check: code-check
+	# Check if repo is clean
+	git diff-index --quiet HEAD -- || (echo "You have uncommited changes. Commit them before release."; exit 1) && (printf "\e[1;38:5:40m✓\e[0m No uncommited changes\n")
 	# Check if a ChangeLog entry exists
 	test $(shell grep -c '^$(GIT_TAG)' ChangeLog.rst) -eq 1 || (echo "Please add a change log entry for release $(GIT_TAG) before releasing"; exit 1) && (printf "\e[1;38:5:40m✓\e[0m ChangeLog entry exists for release $(GIT_TAG)\n")
 	# Check if the tag exists in the local repo
-	test $(shell git tag -l | grep -x -c -F "$(GIT_TAG)") -eq 1 || ( echo "The tag $(GIT_TAG) does not exit in this repository. Tag your release first. Run: git tag $(GIT_TAG)"; exit 1 ) && (printf "\e[1;38:5:40m✓\e[0m Git Tag exists for release $(GIT_TAG)\n")
+	test $(shell git tag -l | grep -x -c -F "$(GIT_TAG)") -eq 1 || ( echo "The tag $(GIT_TAG) does not exit in this repository. Tag your release first. Run: make create-tag"; exit 1 ) && (printf "\e[1;38:5:40m✓\e[0m Git Tag exists for release $(GIT_TAG)\n")
 	# Check if the tag exists in the remote repo
 	# git ls-remote will open a connection to the remote repository!
 	if [ $(NO_GIT_REMOTE_CHECK) -eq 0 ]; then \
 			if [ $$(git ls-remote --tags origin | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
 				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to origin\n"; \
 			else \
-				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to remote. Push your tags first by running: git push --tags\n"; \
+				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to origin. Push your tags first by running: git push --tags\n"; \
 				exit 1; \
 			fi \
 	else \
 		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to origin because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
-	fi \
+	fi
+	if [ $(NO_GIT_REMOTE_CHECK) -eq 0 ]; then \
+			if [ $$(git ls-remote --tags gitea | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
+				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to gitea\n"; \
+			else \
+				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to gitea. Push your tags first by running: git push gitea --tags \n"; \
+				exit 1; \
+			fi \
+	else \
+		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to gitea because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
+	fi
 
-release: update-module dist ChangeLog.$(GIT_TAG).md release-check ## Releases the current version to Gitea
+release-github: update-module dist ChangeLog.$(GIT_TAG).md release-check
+	(gh release create $(GIT_TAG) -F ChangeLog.$(GIT_TAG).md $(DISTROOT)/$(DISTZIP) && printf "\e[1;38:5:40m✓\e[0m Github release $(GIT_TAG) created\n" || printf "\e[1;38:5:190m✓\e[0m Github release $(GIT_TAG) exists\n")
+
+release-gitea: update-module dist ChangeLog.$(GIT_TAG).md release-check
 	# This uses my version of tea. If it gets upgraded, it may lose the --note-file flag
 	# 'tea release create' may fail with exit code 1 if release already exists, but that's OK.
-	(tea release create --note-file ChangeLog.$(GIT_TAG).md --tag $(GIT_TAG) --title $(GIT_TAG) && printf "\e[1;38:5:40m✓\e[0m Release $(GIT_TAG) created\n" || printf "\e[1;38:5:190m✓\e[0m Release $(GIT_TAG) exists\n")
+	(tea release create --repo nithin/tririga-manage-ps1 --note-file ChangeLog.$(GIT_TAG).md --tag $(GIT_TAG) --title $(GIT_TAG) && printf "\e[1;38:5:40m✓\e[0m Release $(GIT_TAG) created\n" || printf "\e[1;38:5:190m✓\e[0m Release $(GIT_TAG) exists\n")
 	# Remove existing file if you're re-releasing
 	#-tea release assets delete --confirm $(GIT_TAG) $(NATIVE_DISTZIP)
-	tea release assets create $(GIT_TAG) $(DISTROOT)/$(DISTZIP)
+	tea release assets create --repo nithin/tririga-manage-ps1 $(GIT_TAG) $(DISTROOT)/$(DISTZIP)
 	printf "\e[1;38:5:40m✓\e[0m Uploaded file $(DISTZIP) to release $(GIT_TAG)\n"
+
+publish-gitea: update-module
 	pwsh Install.ps1 -Publish -NoInstallModule -NuGetApiKey $(GITEA_API_TOKEN)
 	printf "\e[1;38:5:40m✓\e[0m Published package to Gitea NuGet repository\n"
+
+publish-psgallery: update-module
 	pwsh Install.ps1 -PublishPSGallery -NoInstallModule -NuGetApiKey $(PSGALLERY_API_TOKEN)
 	printf "\e[1;38:5:40m✓\e[0m Published package to PowerShell Gallery\n"
+
+check: update-module
+	pwsh -Command "\$$env:PSModulePath = \"\$$(Resolve-Path .)\" + [IO.Path]::PathSeparator + \$$env:PSModulePath; Invoke-Pester -Output Detailed"
+
+code-check:
+	pwsh -Command "Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage | ft -AutoSize; Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage-Rest | ft -AutoSize"
+
+release: release-gitea release-github publish-gitea publish-github ## Releases to Gitea and Github
 
 publish: dist # Published the dist file to Amazon AWS
 	aws s3 cp "$(DISTROOT)/$(DISTZIP)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(DISTZIP)"

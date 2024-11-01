@@ -32,7 +32,7 @@ Function Update-ModuleManifestFilesForInstall() {
     }
 
     $functionNames = $functionNames | Where-Object { $_.Contains("-") }
-    Write-Host "[$moduleName] Export functions: $functionNames"
+    Write-Output "[$moduleName] Export functions: $functionNames"
 
     $modulePath = (Resolve-Path "$moduleName\$moduleName.psd1").Path
 
@@ -51,7 +51,7 @@ Function Update-ModuleManifestFilesForInstall() {
 }
 
 if($updateModule) {
-    Write-Host "==> Update Module definition files"
+    Write-Output "==> Update Module definition files"
     $modules | ForEach-Object { Update-ModuleManifestFilesForInstall $_ }
 }
 
@@ -59,21 +59,21 @@ $profileDir = Split-Path $Profile -Parent
 $moduleDir = Join-Path $profileDir "Modules"
 
 if (!$noInstallModule) {
-    Write-Host "==> Install Modules to $moduleDir"
+    Write-Output "==> Install Modules to $moduleDir"
     New-Item -Type Directory -Path $moduleDir -Force | Out-Null
-    $modules | ForEach-Object { Copy-Item -Recurse -Force -Path $_ -Destination $moduleDir; Write-Host "Installed module $_" }
+    $modules | ForEach-Object { Copy-Item -Recurse -Force -Path $_ -Destination $moduleDir; Write-Output "Installed module $_" }
 
-    Write-Host "==> Update Profile at $Profile"
+    Write-Output "==> Update Profile at $Profile"
     $environmentsFile = Join-Path $profileDir "environments.psd1"
 
     If (!(Test-Path -Path "$Profile") -or !(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
     {
         if (!(Test-Path -Path $environmentsFile)) {
             Copy-Item environments.sample.psd1 $environmentsFile
-            Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
+            Write-Output "A sample environments file has been placed at $environmentsFile. Edit to customize"
         }
 
-        Write-Host "Installing this script to your PowerShell profile $Profile"
+        Write-Output "Installing this script to your PowerShell profile $Profile"
         "`$TririgaEnvironments = (Import-PowerShellDataFile `"$environmentsFile`")" | Out-file "$Profile" -append
         "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
     } else {
@@ -87,7 +87,7 @@ if ($publish) {
         exit 1
     }
 
-    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -Repository Gitea -NuGetApiKey $nuGetApiKey; Write-Host "Published module $_" }
+    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -Repository Gitea -NuGetApiKey $nuGetApiKey; Write-Output "Published module $_" }
 }
 
 
@@ -97,6 +97,6 @@ if ($publishPSgallery) {
         exit 1
     }
 
-    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -NuGetApiKey $nuGetApiKey; Write-Host "Published module $_" }
+    $modules | ForEach-Object { Publish-Module -Name $_\$_.psd1 -NuGetApiKey $nuGetApiKey; Write-Output "Published module $_" }
 }
 

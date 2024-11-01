@@ -6,6 +6,13 @@
 $script:ModuleRoot = $PSScriptRoot
 $script:ModuleVersion = (Import-PowerShellDataFile -Path "$($script:ModuleRoot)\Tririga-Manage-Rest.psd1").ModuleVersion
 
+function GetConfiguration() {
+    if (!$TririgaEnvironments) {
+        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
+    }
+    $TririgaEnvironments
+}
+
 # From https://stackoverflow.com/a/76555554/260740
 function GetAllCookiesFromWebRequestSession
 {
@@ -223,7 +230,7 @@ function CallTririgaApiRaw() {
         $tririgaSession = $tririgaSessionTable[$serverUrlBase]
     } else {
         $sessionTable = @{}
-        New-Variable -Name tririgaSessionTable -Value $sessionTable -Scope Script -Force
+        New-Variable -Name tririgaSessionTable -Value $sessionTable -Scope Script -Force -WhatIf:$false
     }
 
     # TODO: The session might be stale, we need a way to check and invalidate $tririgaSession
@@ -232,7 +239,7 @@ function CallTririgaApiRaw() {
         $tririgaSession = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
         $tririgaSessionTable[$serverUrlBase] = $tririgaSession
 
-        $loginResponseHeaders = @{}
+        #$loginResponseHeaders = @{}
 
         Write-Verbose "No active sessions found. Send Login request to $logonUrl"
         $loginResponse = Invoke-RestMethod -Method POST `
@@ -242,9 +249,11 @@ function CallTririgaApiRaw() {
                 -Body ($loginData | ConvertTo-Json) `
                 -Uri $logonUrl
 
+        Write-Verbose $loginResponse
+
         # -ResponseHeadersVariable loginResponseHeaders `
         # ResponseHeadersVariable param is not supported in PS 5:
-        Write-Verbose ($loginResponseHeaders | ConvertTo-Json)
+        #Write-Verbose ($loginResponseHeaders | ConvertTo-Json)
 
         # Ignore cookie Secure and HttpOnly attributes
         # GetAllCookies is not supported in .net framework 4.0 (used by PS 5). It's only in .NET 6+
@@ -308,15 +317,11 @@ function CallTririgaApi() {
         $apiBody = $input
     }
 
-    if (!$TririgaEnvironments) {
-        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
-    }
-
-    $tririgaEnvironment = $TririgaEnvironments[$environment]
+    $tririgaEnvironment = (GetConfiguration)[$environment]
 
     if (!$tririgaEnvironment) {
         Write-Error "The environment `"$environment`" was not found."
-        Write-Error "Possible values are: $(($TririgaEnvironments.keys) -join ', ')"
+        Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
         return $null
     }
 
@@ -356,7 +361,7 @@ function CallTririgaApi() {
 
             # TODO: Only do this of the result is PSObject
             if (!$noTag) {
-                $result | Add-Member -PassThru environment $environment | Add-Member -PassThru instance $inst
+                $result = $result | Add-Member -PassThru environment $environment | Add-Member -PassThru instance $inst
             }
             # Tag with environment info
             #$result = $result | Add-Member -PassThru environment $environment
@@ -400,9 +405,7 @@ function Get-BuildNumber() {
         # If omitted, command will act on all instances.
         [Alias("Inst", "I")]
         [Parameter(Position=1)]
-        [string]$instance,
-        # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
-        [switch]$raw = $false
+        [string]$instance
     )
 
     $apiCall = @{
@@ -439,9 +442,7 @@ function Get-Summary() {
         # The TRIRIGA instance within the environment to use.
         # If omitted, command will act on the first instance.
         [Alias("Inst", "I")]
-        [string]$instance,
-        # If set, the response object is returned as-is. Otherwise it is converted to JSON text.
-        [switch]$raw = $false
+        [string]$instance
     )
 
     $apiCall = @{
@@ -463,7 +464,7 @@ Gets TRIRIGA Agents configuration
 
 Uses the /api/v1/admin/agent/status method
 #>
-function Get-Agents() {
+function Get-Agent() {
     [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
@@ -541,7 +542,7 @@ function Get-AgentHost() {
         # If omitted, command will act on the first instance.
         [Alias("Inst", "I")]
         [string]$instance,
-        # Set the type of agent to query. Run 'Get-Agents' to see a list of all possible agent types.
+        # Set the type of agent to query. Run 'Get-Agent' to see a list of all possible agent types.
         [Parameter(Mandatory, Position=1)]
         [string]$agent,
         # If set, only list the host when the agent is running
@@ -558,7 +559,7 @@ function Get-AgentHost() {
         NotRunning = $notRunning
     }
 
-    Get-Agents @agentCall | ForEach-Object { $_.Hostname }
+    Get-Agent @agentCall | ForEach-Object { $_.Hostname }
 }
 
 
@@ -572,12 +573,12 @@ Not all listed users have active access. They are in the Admin group an can be g
 
 Uses /api/v1/admin/users/list method
 .EXAMPLE
-PS> Get-TririgaAdminUsers LOCAL | Where-Object fullaccess -eq True
+PS> Get-TririgaAdminUser LOCAL | Where-Object fullaccess -eq True
 userId fullaccess username fullName
 ------ ---------- -------- --------
 221931       True system   System System
 #>
-function Get-AdminUsers() {
+function Get-AdminUser() {
     [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
@@ -600,7 +601,7 @@ function Get-AdminUsers() {
     }
 
     CallTririgaApi @apiCall `
-    | ForEach-Object { $_ | Add-Member -Force -PassThru "fullaccess" ( `
+    | ForEach-Object { $_ | Add-Member -PassThru "fullaccess" ( `
         $_.adminSummary -and $_.adminUsers -and $_.agents -and $_.buildNumber -and `
         $_.caches -and $_.databaseInfo -and $_.databaseQueryTool -and $_.dataConnect -and `
         $_.errorLogs -and $_.javaInfo -and $_.licenses -and $_.maintenanceSchedule -and `
@@ -618,9 +619,9 @@ Gets a list of currently logged in users
 .DESCRIPTION
 Gets a list of currently logged in users
 .EXAMPLE
-PS> Get-TririgaActiveUsers LOCAL | ft
+PS> Get-TririgaActiveUser LOCAL | ft
 #>
-function Get-ActiveUsers() {
+function Get-ActiveUser() {
     [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
@@ -646,7 +647,7 @@ function Get-ActiveUsers() {
 
     $resultHash = (CallTririgaApi @apiCall).Replace('eMail', 'email1') | ConvertFrom-Json
 
-    $now = Get-Date -AsUTC
+    $now = Get-Date # -AsUTC Only in PS 7
 
     foreach($item in $resultHash)
     {
@@ -676,7 +677,7 @@ Stops a TRIRIGA agent
 Uses the /api/v1/admin/agent/stop method
 #>
 function Stop-Agent() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -709,30 +710,31 @@ function Stop-Agent() {
         $agentHost = $thisAgent.hostname
         $agentId = $agent
 
-        Write-Verbose "Operating on Agent: $agent ($agentHost) [$thisAgent]"
-
         # When the configuration is <ANY>, we can't tell what server is actually running the agent
         # Since it's usually seen with Vagrant, guess localhost
         if($agentHost -eq "<ANY>"){
             $agentHost = "localhost"
         }
 
-        $stopApiCall = @{
-            Environment = $environment
-            Instance = $instance
-            ApiMethod = "POST"
-            ApiPath = "/api/v1/admin/agent/stop?agent=$agent&startOnHost=$agentHost&runningOnHost=$agentHost&startupId=$agentId"
-            OnlyOnAnyOneInstance = $true
+        if($PSCmdlet.ShouldProcess("$($thisAgent.agent) [$agent] on $agentHost", "Stop")){
+            $stopApiCall = @{
+                Environment = $environment
+                Instance = $instance
+                ApiMethod = "POST"
+                ApiPath = "/api/v1/admin/agent/stop?agent=$agent&startOnHost=$agentHost&runningOnHost=$agentHost&startupId=$agentId"
+                OnlyOnAnyOneInstance = $true
+            }
+
+            $result = CallTririgaApi @stopApiCall
+
+            # Some values are in single-item arrays. Flatten it and replace the values
+            $result `
+            | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
+            | Add-Member -PassThru "agentname" $agent -Force `
+            | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
+            | Add-Member -PassThru "status" ($result.status -Join ",") -Force
         }
 
-        $result = CallTririgaApi @stopApiCall
-
-        # Some values are in single-item arrays. Flatten it and replace the values
-        $result `
-        | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
-        | Add-Member -PassThru "agentname" $agent -Force `
-        | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
-        | Add-Member -PassThru "status" ($result.status -Join ",") -Force
 
     }
 }
@@ -746,7 +748,7 @@ Starts a TRIRIGA agent
 Uses the /api/v1/admin/agent/start method
 #>
 function Start-Agent() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -779,28 +781,28 @@ function Start-Agent() {
         $agentHost = $thisAgent.hostname
         $agentId = $agent
 
-        Write-Verbose "Operating on Agent: $agent ($agentHost) [$agentId]"
-
         if($agentHost -eq "<ANY>"){
             $agentHost = "localhost"
         }
 
-        $startApiCall = @{
-            Environment = $environment
-            Instance = $instance
-            ApiMethod = "POST"
-            ApiPath = "/api/v1/admin/agent/start?agent=$agent&hostname=$agentHost&startupId=$agentId"
-            OnlyOnAnyOneInstance = $true
+        if($PSCmdlet.ShouldProcess("$($thisAgent.agent) [$agent] on $agentHost", "Start")){
+            $startApiCall = @{
+                Environment = $environment
+                Instance = $instance
+                ApiMethod = "POST"
+                ApiPath = "/api/v1/admin/agent/start?agent=$agent&hostname=$agentHost&startupId=$agentId"
+                OnlyOnAnyOneInstance = $true
+            }
+
+            $result = CallTririgaApi @startApiCall
+
+            # Some values are in single-item arrays. Flatten it and replace the values
+            $result `
+            | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
+            | Add-Member -PassThru "agentname" $agent -Force `
+            | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
+            | Add-Member -PassThru "status" ($result.status -Join ",") -Force
         }
-
-        $result = CallTririgaApi @startApiCall
-
-        # Some values are in single-item arrays. Flatten it and replace the values
-        $result `
-        | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
-        | Add-Member -PassThru "agentname" $agent -Force `
-        | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
-        | Add-Member -PassThru "status" ($result.status -Join ",") -Force
 
     }
 }
@@ -814,7 +816,7 @@ Updates workflow instance recording setting
 Uses the /api/v1/admin/workflowAgentInfo/workflowInstance/update method
 #>
 function Set-WorkflowInstance() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -840,8 +842,12 @@ function Set-WorkflowInstance() {
         ApiPath = "/api/v1/admin/workflowAgentInfo/workflowInstance/update?instanceName=$value"
     }
 
-    CallTririgaApi @apiCall
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
 
+    if($PSCmdlet.ShouldProcess("$environment.$instanceLabel")){
+        CallTririgaApi @apiCall
+    }
 }
 
 <#

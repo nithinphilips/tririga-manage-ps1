@@ -69,8 +69,8 @@ PowerShellVersion = '5.1'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-BuildNumber', 'Get-Summary', 'Get-Agents', 'Get-AgentHost', 
-               'Get-AdminUsers', 'Get-ActiveUsers', 'Stop-Agent', 'Start-Agent', 
+FunctionsToExport = 'Get-BuildNumber', 'Get-Summary', 'Get-Agent', 'Get-AgentHost', 
+               'Get-AdminUser', 'Get-ActiveUser', 'Stop-Agent', 'Start-Agent', 
                'Set-WorkflowInstance', 'Enable-WorkflowInstance', 
                'Disable-WorkflowInstance'
 
@@ -101,10 +101,10 @@ PrivateData = @{
         # Tags = @()
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://www.gnu.org/licenses/gpl-3.0.en.html'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/nithinphilips/tririga-manage-ps1'
 
         # A URL to an icon representing this module.
         # IconUri = ''

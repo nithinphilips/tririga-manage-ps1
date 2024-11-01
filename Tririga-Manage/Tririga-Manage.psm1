@@ -3,20 +3,30 @@
 # PowerShell commands to manage TRIRIGA instances on Windows Servers
 #
 
+$script:ModuleRoot = $PSScriptRoot
+$script:ModuleVersion = (Import-PowerShellDataFile -Path "$($script:ModuleRoot)\Tririga-Manage.psd1").ModuleVersion
+
 # Tririga-Manage-Rest is published with a prefix
 # Re-import it in this context without a prefix
 Import-Module Tririga-Manage-Rest -Prefix "" -ErrorAction 'SilentlyContinue'
 
 #$DBeaverBin="C:\Users\Nithin\AppData\Local\DBeaver\dbeaver.exe"
 
+function GetConfiguration() {
+    if (!$TririgaEnvironments) {
+        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
+    }
+    $TririgaEnvironments
+}
+
 function GetTririgaInstances([string]$environment, [string]$instance = $null, [boolean]$warn = $true) {
 
     Write-Verbose "Search for environment $environment"
-    $tririgaEnvironment = $TririgaEnvironments[$environment]
+    $tririgaEnvironment = (GetConfiguration)[$environment]
 
     if (!$tririgaEnvironment) {
         Write-Error "The environment `"$environment`" was not found."
-        Write-Error "Possible values are: $(($TririgaEnvironments.keys) -join ', ')"
+        Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
         return
     }
 
@@ -148,14 +158,13 @@ function GetWasLogName($log) {
 }
 
 function HandleOmp() {
-    [CmdletBinding(SupportsShouldProcess=$true)]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [ValidateNotNullOrEmpty()]
         [string]$environment,
         [ValidateNotNullOrEmpty()]
         [string[]]$ompfiles,
         [string]$destinationPath,
-        [boolean]$dryrun,
         [boolean]$force,
         [boolean]$tailLog
     )
@@ -171,7 +180,7 @@ function HandleOmp() {
 
     if ($ompfilesExpanded.Count -gt 1) {
         if ($force -or $PSCmdlet.ShouldContinue("You are trying to upload $($ompfilesExpanded.Count) files.", "Would you like to continue?") ) {
-            Write-Warning "Continue when are more than 5 files in the OMP list: $($ompfilesExpanded.Count)"
+            Write-Warning "Continuing even when are more than 5 files in the OMP list: $($ompfilesExpanded.Count)"
         } else {
             return
         }
@@ -183,12 +192,10 @@ function HandleOmp() {
         $tririgaRoot = GetUncPath -server $instance["Host"] -path $instance["Tririga"]
         $remoteOmpfile = Join-Path -Path "$tririgaRoot" -ChildPath "$ompName"
         $ompFolder = Join-Path -Path "$tririgaRoot" -ChildPath $destinationPath
-        if (!$dryrun) {
-            Write-Host "Upload $ompName -> $($instance["Environment"]) $($instance["Instance"]) at $ompFolder"
+        if ($PSCmdlet.ShouldProcess("$ompName -> $($instance["Environment"]).$($instance["Instance"]) at $ompFolder", "Upload")) {
+            Write-Output "Upload $ompName -> $($instance["Environment"]) $($instance["Instance"]) at $ompFolder"
             Copy-Item -Path "$ompFullPath" -Destination "$tririgaRoot"
             Move-Item -Path "$remoteOmpfile" -Destination "$ompFolder"
-        } else {
-            Write-Host "[DryRun] Upload $ompName -> $($instance["Environment"]) $($instance["Instance"]) at $ompFolder"
         }
     }
 
@@ -203,21 +210,17 @@ Gets all known environments
 .DESCRIPTION
 Gets a list of all known environment
 #>
-function Get-Environments() {
+function Get-Environment() {
     [CmdletBinding()]
     param(
         # If set, the object is returned as-is.
         [switch]$raw = $false
     )
 
-    if (!$TririgaEnvironments) {
-        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
-    }
-
     if($raw) {
-        $TririgaEnvironments
+        (GetConfiguration)
     } else {
-        Write-Output "Known environments are: $(($TririgaEnvironments.keys) -join ', ')"
+        Write-Output "Known environments are: $(((GetConfiguration).keys) -join ', ')"
     }
 }
 
@@ -227,7 +230,7 @@ Gets all known instances in a given environment
 .DESCRIPTION
 Gets a list of all known instances in a given environment
 #>
-function Get-Instances() {
+function Get-Instance() {
     [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
@@ -240,11 +243,7 @@ function Get-Instances() {
         [switch]$raw = $false
     )
 
-    if (!$TririgaEnvironments) {
-        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
-    }
-
-    $tririgaEnvironment = $TririgaEnvironments[$environment]
+    $tririgaEnvironment = (GetConfiguration)[$environment]
 
     if ($tririgaEnvironment) {
         if ($raw) {
@@ -254,10 +253,10 @@ function Get-Instances() {
         }
     } else {
         if($raw) {
-            $TririgaEnvironments
+            (GetConfiguration)
         } else {
-            ForEach($env in $TririgaEnvironments.keys) {
-                $envItem = $TririgaEnvironments[$env]
+            ForEach($env in (GetConfiguration).keys) {
+                $envItem = (GetConfiguration)[$env]
                 Write-Output "$env environment: $(($envItem.Servers.keys) -join ', ')"
             }
         }
@@ -270,7 +269,8 @@ Get the current status of TRIRIGA service
 .DESCRIPTION
 Get the current status of TRIRIGA Windows service
 #>
-function Get-Status() {
+function Get-Service() {
+    [Alias("Get-Status")]
     [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
@@ -298,22 +298,22 @@ function Get-Status() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-            Write-Host -ForegroundColor black -BackgroundColor green "$tririgaEnvName $tririgaInstName"
+            Write-Output -ForegroundColor black -BackgroundColor green "$tririgaEnvName $tririgaInstName"
 
-            Write-Host -ForegroundColor yellow "Service Status"
-            Invoke-Command -ComputerName $tririgaHost -ScriptBlock { Get-Service "$($using:service)" | Select-Object Name,DisplayName,Status,StartType | Format-List  }
+            Write-Output -ForegroundColor yellow "Service Status"
+            Invoke-Command -ComputerName $tririgaHost -ScriptBlock { Microsoft.PowerShell.Management\Get-Service "$($using:service)" | Select-Object Name,DisplayName,Status,StartType | Format-List  }
 
-            Write-Host -ForegroundColor yellow "Uptime"
+            Write-Output -ForegroundColor yellow "Uptime"
             GetServiceUptime -TririgaHost $tririgaHost -Name $service
 
             if ($disk) {
                 # Print free disk size
-                Write-Host -ForegroundColor yellow "Disk Status"
+                Write-Output -ForegroundColor yellow "Disk Status"
                 Invoke-Command -ComputerName $tririgaHost -ScriptBlock { Get-PSDrive -PSProvider FileSystem | Format-Table }
             }
 
             # Print $tail lines from server.log
-            Write-Host -ForegroundColor yellow "Tririga Log (last $tail lines)"
+            Write-Output -ForegroundColor yellow "Tririga Log (last $tail lines)"
             $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
             $logRoot = Join-Path -Path $tririgaRoot -ChildPath "log"
             $logPath = Join-Path -Path $logRoot -ChildPath (GetTririgaLogName "server")
@@ -331,7 +331,7 @@ Starts a single TRIRIGA instance or all instances in an environment
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
 #>
 function Start-Service() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -376,7 +376,7 @@ Stops a single TRIRIGA instance or all instances in an environment
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
 #>
 function Stop-Service() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -417,7 +417,7 @@ Restarts a single TRIRIGA instance or all instances in an environment
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
 #>
 function Restart-Service() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -468,7 +468,7 @@ Disables TRIRIGA services. Disabled services will not start on server reboot.
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
 #>
 function Disable-Service() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -565,15 +565,11 @@ function Open-Database() {
         [string[]]$sqlfiles
     )
 
-    if (!$TririgaEnvironments) {
-        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
-    }
-
-    $tririgaEnvironment = $TririgaEnvironments[$environment]
+    $tririgaEnvironment = (GetConfiguration)[$environment]
 
     if (!$tririgaEnvironment) {
         Write-Error "The environment `"$environment`" was not found."
-        Write-Error "Possible values are: $(($TririgaEnvironments.keys) -join ', ')"
+        Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
         return
     }
 
@@ -799,7 +795,7 @@ PS> Save-Omp DEV *.zip
 #>
 function Save-Omp() {
     [Alias("Upload-Omp")]
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -810,11 +806,10 @@ function Save-Omp() {
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [string[]]$ompfiles,
-        [switch]$dryrun,
         [switch]$force
     )
 
-    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\Uploads" -DryRun $dryrun -Force $force -TailLog $false
+    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\Uploads" -Force $force -TailLog $false
 }
 
 <#
@@ -824,7 +819,7 @@ Uploads and imports a local OMP zip file to TRIRIGA
 Uploads and imports a local OMP zip file to TRIRIGA
 #>
 function Import-Omp() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -835,11 +830,10 @@ function Import-Omp() {
         [ValidateNotNullOrEmpty()]
         [SupportsWildcards()]
         [string[]]$ompfiles,
-        [switch]$dryrun,
         [switch]$force
     )
 
-    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\UploadsWithImport" -DryRun $dryrun -Force $force -TailLog $true
+    HandleOmp -Environment $environment -OmpFiles $ompfiles -DestinationPath "userfiles\\ObjectMigration\\UploadsWithImport" -Force $force -TailLog $true
 }
 
 <#

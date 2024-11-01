@@ -69,7 +69,7 @@ PowerShellVersion = '5.1'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Get-Environments', 'Get-Instances', 'Get-Status', 'Start-Service', 
+FunctionsToExport = 'Get-Environment', 'Get-Instance', 'Get-Service', 'Start-Service', 
                'Stop-Service', 'Restart-Service', 'Disable-Service', 'Enable-Service', 
                'Open-Database', 'Get-Log', 'Open-Log', 'Enter-Host', 'Open-Web', 
                'Open-RDP', 'Open-Folder', 'Save-Omp', 'Import-Omp', 'Open-WasFolder', 
@@ -102,10 +102,10 @@ PrivateData = @{
         # Tags = @()
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://www.gnu.org/licenses/gpl-3.0.en.html'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/nithinphilips/tririga-manage-ps1'
 
         # A URL to an icon representing this module.
         # IconUri = ''
