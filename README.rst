@@ -8,25 +8,19 @@ using the TRIRIGA REST management API.
 Features
 --------
 * Simple way to refer to instances
-* Where applicable, commands operate on all instances in an environment at once
+* Where applicable, commands can operate on all instances in an environment at once
 * Confirmation when working on production instances
 
 Requirements
 ------------
 * Windows Powershell 5.x or PowerShell 7.x
-* TRIRIGA servers must be running Windows
+* TRIRIGA servers must be running Windows to use the ``Tririga-Manage`` module
 * Your local Windows account must have access to the Windows server running
   TRIRIGA
 
-Notice
-------
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
 Commands
 --------
-The commands are self-documenting. The see the latest help, run:
+The see the latest help, run:
 
 .. code:: ps1
 
@@ -38,31 +32,104 @@ To see detailed help for a command, run:
 
     Get-Help <command> -Detailed
 
-Usage
-~~~~~
+Configuration
+~~~~~~~~~~~~~
 Before using the commands, you will need to set a configuration variable named
 ``$TririgaEnvironments`` with details about your environments.
 
 If you wish to use the ``Open-TririgaDatabase`` command, you will also need to set
 the ``$DBeaverBin`` variable with the path to the ``dbeaver.exe`` file.
 
-To configure, add this to your `PowerShell Profile
-<https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_profiles>`_
-file. To keep things tidy, we are storing the environment information in a
-separate file (``environments.ps1``)
+#. To load the sample configuration, open a PowerShell window and paste the following:
 
-.. code:: ps1
+   .. code:: ps1
 
-    $TririgaEnvironments = (Get-Content "$env:UserProfile\Documents\PowerShell\environments.ps1" | Out-String | Invoke-Expression)
-    $DBeaverBin="$env:UserProfile\AppData\Local\DBeaver\dbeaver.exe"
+        $EnvironmentSampleLocation = "https://raw.githubusercontent.com/nithinphilips/tririga-manage-ps1/refs/heads/main/environments.sample.psd1"
 
-When you install using the ``Install.ps1`` script, these lines are
-automatically added to your PowerShell Profile file and a sample
-``environments.ps1`` file is installed (if you don't already have one.)
+        $profileDir = Split-Path $Profile -Parent
+        $environmentsFile = Join-Path $profileDir "environments.psd1"
 
-.. include:: environments.sample.ps1
-    :code: ps1
+        New-Item -Type Directory -Path $profileDir -Force | Out-Null
 
+        If (!(Test-Path -Path "$Profile") -or !(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
+        {
+            if (!(Test-Path -Path $environmentsFile)) {
+                (Invoke-WebRequest $EnvironmentSampleLocation).Content | Out-File $environmentsFile
+                Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
+            }
+
+            Write-Host "Installing this script to your PowerShell profile $Profile"
+            "`$TririgaEnvironments = (Import-PowerShellDataFile `"$environmentsFile`")" | Out-file "$Profile" -append
+            "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
+        } else {
+            echo "Profile already configured"
+        }
+
+   Note the location of the sample file.
+
+#. Edit the sample file. Refer to the comments for instructions:
+
+   .. ##BEGIN CONFIG SAMPLE
+   .. code:: ps1
+   
+        # This file is a PowerShell Data file
+        # Doc: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_data_files
+        @{
+            # The key is the unique name you want to use for this environment
+            # This is used as the value for the -Environment argument
+            "LOCAL" = @{
+                # If $true, any actions that might modify the environment will require confirmation
+                # Set this on Production environment.
+                Warn = $False;
+                # The DBeaver profile associated with this environment
+                DbProfile = "Tririga Local";
+                # Tririga Username and Password (non-SSO) for use with the REST api calls
+                Username = "system";
+                Password = "badadmin";
+                # List of all your TRIRIGA servers/instances
+                Servers = @{
+                    # The key is the unique name you want to use for this instance
+                    # This is used as the value for the -Instance argument
+                    "ONE" = @{
+                        # The hostname of this instance
+                        Host = "localhost"
+                        # The path where TRIRIGA is installed on the server
+                        Tririga = "C:\IBM\Tririga1"
+                        # The path where WebSphere profile is located on the server
+                        WebSphere = "C:\Program Files\IBM\WebSphere\AppServer\profiles\AppSrv01\logs\server1"
+                        # The Windows service that controls this TRIRIGA instance
+                        Service = "TestService1"
+                        # The URL to access this TRIRIGA instance
+                        Url = "http://localhost:9080"
+                        # Optional. Url that bypasses SSO (used when you use IIS auth).
+                        # For SAML SSO, leave this out
+                        ApiUrl = "http://localhost:9081"
+                        # The URL to access this instance's WebSphere console
+                        WasUrl = "http://localhost:9060/ibm/console"
+                        # Optional. This should be either hostname or if set, the
+                        # INSTANCE_NAME property in TRIRIGAWEB.properties This is used
+                        # to match agent host information to an instance
+                        InstanceName = "<ANY>"
+                        # If you cannot use Rest API to identify the ObjectMigration
+                        # server, indicate that this instance run the object migration
+                        # agent.
+                        ObjectMigrationAgent = $true
+                    };
+                    # Repeat for all other servers/instances
+                    "TWO" = @{
+                        # ...
+                    };
+                }
+            };
+            # Repeat for all other environments
+            "REMOTE" = @{
+                # ...
+            };
+        }
+   .. ##END CONFIG SAMPLE
+
+Usage
+~~~~~
 All commands accept a ``-Environment`` argument. For example, with the sample
 configuration above, you can use either ``-Environment LOCAL`` or ``-Environment REMOTE``
 
@@ -117,17 +184,22 @@ Available Commands
 
 Installation
 ------------
-From Gitea
-~~~~~~~~~~
+From PowerShell Gallery
+~~~~~~~~~~~~~~~~~~~~~~~~
+You may need to enable script execution:
+
+.. code:: ps1
+
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
 Run:
 
 .. code:: ps1
 
-    Install-Module -Scope CurrentUser -Name Tririga-Manage -RequiredVersion <version>
-    Install-Module -Scope CurrentUser -Name Tririga-Manage-Rest -RequiredVersion <version>
+    Install-Module Tririga-Manage -Scope CurrentUser
+    Install-Module Tririga-Manage-Rest -Scope CurrentUser
 
-.. Note:: Due to limitations in the Gitea Nuget API, the version must be
-          specified. Run ``Find-Module -Repository Gitea`` to see the latest versions.
+Configure the environment as described in the `Configuration`_ section above.
 
 From Source
 ~~~~~~~~~~~
@@ -136,43 +208,22 @@ From Source
 
         .\Install.ps1
 
-Development
------------
-To load the module from the project directory:
-
-.. code:: ps1
-
-    $env:PSModulePath = "$(Resolve-Path .)" + [IO.Path]::PathSeparator + $env:PSModulePath
-    ./Install.ps1 -UpdateModule -NoInstallModule
-    Import-Module Tririga-Manage-Rest -Force; Import-Module Tririga-Manage -Force
-
-Repeat the ``Import-Module`` commands to reload the module as you make changes.
-
-To see debug log messages, set:
-
-.. code:: ps1
-
-    $VerbosePreference = "Continue"
-
-Publish
+License
 -------
-To publish the modules to Gitea
+.. code::
 
-#. Edit ``install.ps1`` and update the version.
-#. Build dist. This will update README and module definitions::
+    tririga-manage-ps1. PowerShell Modules to manage IBM TRIRIGA.
+    Copyright (C) 2024 Nithin Philips
 
-        make dist
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-#. Commmit changes
-#. Create a tag::
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-        git tag v<version>
-
-#. Push all changes::
-
-        git push && git push --tags
-
-#. Release::
-
-        make release
-
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.

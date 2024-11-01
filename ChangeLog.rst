@@ -1,6 +1,14 @@
 Change Log
 ==========
 
+v4.3.0
+------
+* Bypasses secure cookies in WindowsPowerShell (previusly it was only possible in PS7)
+* Update documentation for installation from PowerShell Gallery
+* Configuration is now loaded as a `PowerShell Data file
+  <https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_data_files>`_
+* Better error handling when configuration is not found.
+
 v4.2.0
 ------
 * All Rest commands now output native powershell objects.

@@ -19,9 +19,9 @@ DISTZIP:=tririga-manage-ps1-$(VERSION).zip
 
 
 
-DIST_EXTRAS:=Install.ps1 environments.sample.ps1 README.rst ChangeLog.rst README.docx ChangeLog.docx
+DIST_EXTRAS:=Install.ps1 environments.sample.psd1 README.rst ChangeLog.rst README.docx ChangeLog.docx
 
-.INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md
+.INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md environments.sample.psd1.tmp
 
 # Extract a changelog for a specific version from ChangeLog.rst
 # cargo install markdown-extract
@@ -56,13 +56,21 @@ all-docs.tmp: all-docs.csv
 	echo "" >> $@
 	sed 's/^/    /g' $< >> $@
 
-update-module:
-	pwsh Install.ps1 -UpdateModule -NoInstallModule
+environments.sample.psd1.tmp: environments.sample.psd1
+	echo "   .. code:: ps1" > $@
+	echo "   " >> $@
+	sed 's/^/        /g' $< >> $@
+	dos2unix $@
 
-update-readme: all-docs.tmp
+update-module: ChangeLog.$(GIT_TAG).md
+	pwsh Install.ps1 -UpdateModule -NoInstallModule -ReleaseNoteFile $<
+
+update-readme: all-docs.tmp environments.sample.psd1.tmp
 	# Delete everything between these lines
 	sed -i -e '/BEGIN TABLE/,/END TABLE/{//!d}' README.rst
-	sed -i -e '/BEGIN TABLE/ r $<' README.rst
+	sed -i -e '/BEGIN TABLE/ r all-docs.tmp' README.rst
+	sed -i -e '/BEGIN CONFIG SAMPLE/,/END CONFIG SAMPLE/{//!d}' README.rst
+	sed -i -e '/BEGIN CONFIG SAMPLE/ r environments.sample.psd1.tmp' README.rst
 
 dist: $(DISTROOT)/$(DISTZIP)
 

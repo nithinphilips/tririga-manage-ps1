@@ -1,6 +1,24 @@
 Developer README
 ================
 
+Development
+-----------
+To load the module from the project directory:
+
+.. code:: ps1
+
+    $env:PSModulePath = "$(Resolve-Path .)" + [IO.Path]::PathSeparator + $env:PSModulePath
+    ./Install.ps1 -UpdateModule -NoInstallModule
+    Import-Module Tririga-Manage-Rest -Force; Import-Module Tririga-Manage -Force
+
+Repeat the ``Import-Module`` commands to reload the module as you make changes.
+
+To see debug log messages, set:
+
+.. code:: ps1
+
+    $VerbosePreference = "Continue"
+
 Parameter Handling
 ------------------
 We have commands that:
@@ -66,3 +84,25 @@ We have commands that:
            # If omitted, command will act on the first instance.
            [Alias("Inst", "I")]
            [string]$instance,
+
+Publish
+-------
+To publish the modules to Gitea
+
+#. Edit ``install.ps1`` and update the version.
+#. Build dist. This will update README and module definitions::
+
+        make dist
+
+#. Commmit changes
+#. Create a tag::
+
+        git tag v<version>
+
+#. Push all changes::
+
+        git push && git push --tags
+
+#. Release::
+
+        make release

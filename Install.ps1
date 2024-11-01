@@ -1,11 +1,12 @@
 #!/usr/bin/env pwsh
 param(
-    [string]$version="4.2.0",
+    [string]$version="4.3.0",
     [switch]$updateModule,
     [switch]$noInstallModule,
     [switch]$publish,
     [switch]$PublishPSGallery,
-    [string]$nuGetApiKey
+    [string]$nuGetApiKey,
+    [string]$releaseNoteFile
 )
 
 $modules = @("Tririga-Manage", "Tririga-Manage-Rest")
@@ -41,6 +42,11 @@ Function Update-ModuleManifestFilesForInstall() {
         ModuleVersion = $version
     }
 
+
+    if($releaseNoteFile) {
+        $Params["ReleaseNotes"] = (Get-Content $releaseNoteFile)
+    }
+
     Update-ModuleManifest @Params
 }
 
@@ -58,17 +64,17 @@ if (!$noInstallModule) {
     $modules | ForEach-Object { Copy-Item -Recurse -Force -Path $_ -Destination $moduleDir; Write-Host "Installed module $_" }
 
     Write-Host "==> Update Profile at $Profile"
-    $environmentsFile = Join-Path $profileDir "environments.ps1"
+    $environmentsFile = Join-Path $profileDir "environments.psd1"
 
-    If (!(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
+    If (!(Test-Path -Path "$Profile") -or !(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
     {
         if (!(Test-Path -Path $environmentsFile)) {
-            Copy-Item environments.sample.ps1 $environmentsFile
+            Copy-Item environments.sample.psd1 $environmentsFile
             Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
         }
 
-        echo "Installing this script to your PowerShell profile $Profile"
-        "`$TririgaEnvironments = (Get-Content `"$environmentsFile`" | Out-String | Invoke-Expression)" | Out-file "$Profile" -append
+        Write-Host "Installing this script to your PowerShell profile $Profile"
+        "`$TririgaEnvironments = (Import-PowerShellDataFile `"$environmentsFile`")" | Out-file "$Profile" -append
         "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
     } else {
         echo "Profile already configured"

@@ -210,6 +210,10 @@ function Get-Environments() {
         [switch]$raw = $false
     )
 
+    if (!$TririgaEnvironments) {
+        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
+    }
+
     if($raw) {
         $TririgaEnvironments
     } else {
@@ -235,6 +239,10 @@ function Get-Instances() {
         # If set, the object is returned as-is.
         [switch]$raw = $false
     )
+
+    if (!$TririgaEnvironments) {
+        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
+    }
 
     $tririgaEnvironment = $TririgaEnvironments[$environment]
 
@@ -556,6 +564,10 @@ function Open-Database() {
         [SupportsWildcards()]
         [string[]]$sqlfiles
     )
+
+    if (!$TririgaEnvironments) {
+        throw "Module is not configured. Visit https://github.com/nithinphilips/tririga-manage-ps1/blob/main/README.rst#configuration for instructions."
+    }
 
     $tririgaEnvironment = $TririgaEnvironments[$environment]
 
