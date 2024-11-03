@@ -274,7 +274,7 @@ function CallTririgaApiRaw() {
                 $cookie.HttpOnly = $false
                 Write-Verbose $cookie
             }
-            Write-Verbose "Can't modify Cookies."
+            Write-Verbose "Modify Cookies (PS v5 method)"
         }
     } else {
         Write-Verbose "Active session found. Not logging in again"
@@ -296,7 +296,6 @@ function CallTririgaApiRaw() {
             $tririgaSessionTable[$serverUrlBase] = $null
         }
     }
-
 }
 
 function CallTririgaApi() {

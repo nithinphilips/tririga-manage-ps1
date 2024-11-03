@@ -7,11 +7,7 @@ To load the module from the project directory:
 
 .. code:: ps1
 
-    $env:PSModulePath = "$(Resolve-Path .)" + [IO.Path]::PathSeparator + $env:PSModulePath
-    ./Install.ps1 -UpdateModule -NoInstallModule
-    Import-Module Tririga-Manage-Rest -Force; Import-Module Tririga-Manage -Force
-
-Repeat the ``Import-Module`` commands to reload the module as you make changes.
+    . SetupDev.ps1
 
 To see debug log messages, set:
 
@@ -23,14 +19,8 @@ To run tests:
 
 .. code:: ps1
 
-    Invoke-Pester
+    make check
 
-Check for script issues:
-
-.. code:: ps1
-
-    Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage | ft -AutoSize
-    Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage-Rest | ft -AutoSize
 
 Parameter Handling
 ------------------
@@ -110,7 +100,7 @@ To publish the modules to Gitea
 #. Commmit changes
 #. Create a tag::
 
-        git tag v<version>
+        make git-tag
 
 #. Push all changes::
 
@@ -119,3 +109,15 @@ To publish the modules to Gitea
 #. Release::
 
         make release
+
+PowerShell
+----------
+* https://learn.microsoft.com/en-us/powershell/gallery/concepts/publishing-guidelines
+* https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-windows-powershell-commands
+* https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/required-development-guidelines
+* https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/windows-powershell-cmdlet-concepts
+* https://learn.microsoft.com/en-us/powershell/scripting/developer/module/how-to-write-a-powershell-module-manifest
+* https://learn.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everything-about-shouldprocess
+* https://learn.microsoft.com/en-us/powershell/scripting/samples/using-format-commands-to-change-output-view
+* https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer
+* https://pester.dev/docs/quick-start

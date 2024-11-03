@@ -19,7 +19,7 @@ function GetConfiguration() {
     $TririgaEnvironments
 }
 
-function GetTririgaInstances([string]$environment, [string]$instance = $null, [boolean]$warn = $true) {
+function GetTririgaInstances([string]$environment, [string]$instance = $null, [boolean]$warn = $true, [boolean]$force = $false) {
 
     Write-Verbose "Search for environment $environment"
     $tririgaEnvironment = (GetConfiguration)[$environment]
@@ -31,10 +31,10 @@ function GetTririgaInstances([string]$environment, [string]$instance = $null, [b
     }
 
     if ($warn -and $tririgaEnvironment.Warn) {
-        Write-Warning "WARNING: You are making a change to a Production environment. You have 10 seconds to hit CTRL + C to stop."
-        for ($i = 0; $i -le 100; $i = $i + 10 ) {
-            Write-Progress -Activity "This will affect a PROD env. Hit Ctrl + C to stop" -Status "$(10 - ($i / 10)) seconds remaining" -PercentComplete $i
-            Start-Sleep -Seconds 1
+        if ($force -or $PSCmdlet.ShouldContinue("You are making a change to a PRODUCTION environment. Run with the -WhatIf switch to preview the changes.", "Would you like to continue making changes to PRODUCTION environment?") ) {
+            Write-Warning "Making a change to a PRODUCTION environment"
+        } else {
+            return
         }
     }
 
@@ -357,8 +357,10 @@ function Start-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-            Write-Output "Starting $tririgaEnvName $tririgaInstName"
-            sc.exe \\$tririgaHost start "$service"
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Start")) {
+                Write-Output "Starting $tririgaEnvName $tririgaInstName"
+                sc.exe \\$tririgaHost start "$service"
+            }
 
             if ($instances.Count -eq 1) {
                 Get-Log -environment $inst["Environment"] -instance $inst["Instance"] -log $null
@@ -402,8 +404,10 @@ function Stop-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-            Write-Output "Stopping $tririgaEnvName $tririgaInstName"
-            sc.exe \\$tririgaHost stop "$service"
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Stop")) {
+                Write-Output "Stopping $tririgaEnvName $tririgaInstName"
+                sc.exe \\$tririgaHost stop "$service"
+            }
         }
     }
 }
@@ -445,10 +449,20 @@ function Restart-Service() {
             $service = $inst["Service"]
 
             Write-Output "Restarting $tririgaEnvName $tririgaInstName"
-            sc.exe \\$tririgaHost stop "$service"
-            Write-Output "Waiting 30 seconds for the service to stop"
-            Start-Sleep -Seconds 30
-            sc.exe \\$tririgaHost start "$service"
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Stop")) {
+                sc.exe \\$tririgaHost stop "$service"
+                Write-Output "Waiting 30 seconds for the service to stop"
+                Start-Sleep -Seconds 30
+            }
+
+            if ($PSCmdlet.ShouldProcess("Clock", "Wait for 30 seconds")) {
+                Write-Output "Waiting 30 seconds for the service to stop"
+                Start-Sleep -Seconds 30
+            }
+
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Start")) {
+                sc.exe \\$tririgaHost start "$service"
+            }
 
             if ($instances.Count -gt 1) {
                 Start-Sleep -Seconds 2
@@ -494,7 +508,9 @@ function Disable-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-            sc.exe \\$tririgaHost config "$service" start= demand
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Change Start Mode to Demand")) {
+                sc.exe \\$tririgaHost config "$service" start= demand
+            }
         }
     }
 }
@@ -508,7 +524,7 @@ Enables TRIRIGA services. Enabled services will start automatically on server re
 If you run this against a production environment, a warning will be shown. There is a 10 second wait.
 #>
 function Enable-Service() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -534,7 +550,9 @@ function Enable-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-            sc.exe \\$tririgaHost config "$service" start= auto
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Change Start Mode to Auto")) {
+                sc.exe \\$tririgaHost config "$service" start= auto
+            }
         }
     }
 }
@@ -591,7 +609,7 @@ Tails a TRIRIGA log file in the console
 #>
 function Get-Log() {
     [Alias("Tail-Log")]
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -618,8 +636,9 @@ function Get-Log() {
             $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
             $logRoot = Join-Path -Path $tririgaRoot -ChildPath "log"
             $logPath = Join-Path -Path $logRoot -ChildPath (GetTririgaLogName $log)
-            Write-Verbose "Tailing $logPath"
-            Get-Content -Tail $tail -Wait $logPath
+            if ($PSCmdlet.ShouldProcess("$logPath", "Tail file")) {
+                Get-Content -Tail $tail -Wait $logPath
+            }
         }
     }
 }

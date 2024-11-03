@@ -1,6 +1,20 @@
 Change Log
 ==========
 
+v4.4.0
+------
+* Fix bug in REST module returning results twice
+* Implement ``-WhatIf`` flag in any commands that will make a change.
+* Rename commands per PSScriptAnalyer recommendations:
+
+  * Get-AdminUsers -> Get-AdminUser
+  * Get-ActiveUsers -> Get-ActiveUser
+  * Get-Agents -> Get-Agent
+
+* Implement unit tests.
+* Changes to production environments is now confirmed with a a Yes/No prompt,
+  not a timer.
+
 v4.3.0
 ------
 * Bypasses secure cookies in WindowsPowerShell (previusly it was only possible in PS7)

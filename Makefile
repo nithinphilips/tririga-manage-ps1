@@ -74,7 +74,7 @@ update-readme: all-docs.tmp environments.sample.psd1.tmp
 
 dist: $(DISTROOT)/$(DISTZIP)
 
-create-tag:
+git-tag:
 	git tag v$(VERSION)
 
 release-check: code-check
@@ -83,7 +83,7 @@ release-check: code-check
 	# Check if a ChangeLog entry exists
 	test $(shell grep -c '^$(GIT_TAG)' ChangeLog.rst) -eq 1 || (echo "Please add a change log entry for release $(GIT_TAG) before releasing"; exit 1) && (printf "\e[1;38:5:40m✓\e[0m ChangeLog entry exists for release $(GIT_TAG)\n")
 	# Check if the tag exists in the local repo
-	test $(shell git tag -l | grep -x -c -F "$(GIT_TAG)") -eq 1 || ( echo "The tag $(GIT_TAG) does not exit in this repository. Tag your release first. Run: make create-tag"; exit 1 ) && (printf "\e[1;38:5:40m✓\e[0m Git Tag exists for release $(GIT_TAG)\n")
+	test $(shell git tag -l | grep -x -c -F "$(GIT_TAG)") -eq 1 || ( echo "The tag $(GIT_TAG) does not exit in this repository. Tag your release first. Run: make git-tag"; exit 1 ) && (printf "\e[1;38:5:40m✓\e[0m Git Tag exists for release $(GIT_TAG)\n")
 	# Check if the tag exists in the remote repo
 	# git ls-remote will open a connection to the remote repository!
 	if [ $(NO_GIT_REMOTE_CHECK) -eq 0 ]; then \
@@ -128,7 +128,7 @@ publish-psgallery: update-module
 	printf "\e[1;38:5:40m✓\e[0m Published package to PowerShell Gallery\n"
 
 check: update-module
-	pwsh -Command "\$$env:PSModulePath = \"\$$(Resolve-Path .)\" + [IO.Path]::PathSeparator + \$$env:PSModulePath; Invoke-Pester -Output Detailed"
+	pwsh -Command "\$$env:PSModulePath = \"\$$(Resolve-Path .)\" + [IO.Path]::PathSeparator + \$$env:PSModulePath; Invoke-Pester -Output Detailed"
 
 code-check:
 	pwsh -Command "Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage | ft -AutoSize; Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage-Rest | ft -AutoSize"
