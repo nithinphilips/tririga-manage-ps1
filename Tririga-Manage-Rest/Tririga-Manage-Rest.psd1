@@ -111,10 +111,14 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = '
--   Bypasses secure cookies in WindowsPowerShell (previusly it was only possible in PS7)
--   Update documentation for installation from PowerShell Gallery
--   Configuration is now loaded as a [PowerShell Data file](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_data_files)
--   Better error handling when configuration is not found.
+-   Fix bug in REST module returning results twice
+-   Implement `-WhatIf` flag in any commands that will make a change.
+-   Rename commands per PSScriptAnalyer recommendations:
+    -   Get-AdminUsers -\> Get-AdminUser
+    -   Get-ActiveUsers -\> Get-ActiveUser
+    -   Get-Agents -\> Get-Agent
+-   Implement unit tests.
+-   Changes to production environments is now confirmed with a a Yes/No prompt, not a timer.
 '
 
         # Prerelease string of this module
