@@ -147,18 +147,18 @@ Available Commands
     :stub-columns: 1
 
     Name,Synopsis
-    Get-TririgaActiveUsers,Gets a list of currently logged in users
-    Get-TririgaAdminUsers,Gets a list of users who can access the TRIRIGA Admin Console
+    Get-TririgaActiveUser,Gets a list of currently logged in users
+    Get-TririgaAdminUser,Gets a list of users who can access the TRIRIGA Admin Console
+    Get-TririgaAgent,Gets TRIRIGA Agents configuration
     Start-TririgaAgent,Starts a TRIRIGA agent
     Stop-TririgaAgent,Stops a TRIRIGA agent
     Get-TririgaAgentHost,Gets the configured host(s) for the given agent
-    Get-TririgaAgents,Gets TRIRIGA Agents configuration
     Get-TririgaBuildNumber,Gets TRIRIGA build number
     Open-TririgaDatabase,Opens Dbeaver and connects to the TRIRIGA database
-    Get-TririgaEnvironments,Gets all known environments
+    Get-TririgaEnvironment,Gets all known environments
     Open-TririgaFolder,Opens a TRIRIGA installation directory path
     Enter-TririgaHost,Starts a remote powershell session to a TRIRIGA instance
-    Get-TririgaInstances,Gets all known instances in a given environment
+    Get-TririgaInstance,Gets all known instances in a given environment
     Get-TririgaLog,Tails a TRIRIGA log file
     Open-TririgaLog,Opens a TRIRIGA log file
     Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
@@ -167,10 +167,10 @@ Available Commands
     Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
     Disable-TririgaService,Disables TRIRIGA service
     Enable-TririgaService,Enables TRIRIGA service
+    Get-TririgaService,Get the current status of TRIRIGA service
     Restart-TririgaService,Restarts TRIRIGA service
     Start-TririgaService,Starts TRIRIGA service
     Stop-TririgaService,Stops TRIRIGA service
-    Get-TririgaStatus,Get the current status of TRIRIGA service
     Get-TririgaSummary,Gets basic information about a TRIRIGA instance
     Open-TririgaWasFolder,Opens a WebSphere profile path
     Get-TririgaWasLog,Tails a WebSphere log file
