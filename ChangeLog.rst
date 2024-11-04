@@ -4,6 +4,7 @@ Change Log
 vNEXT
 -----
 * Fix bug getting actual objectmigration agent in PS 5.1
+* Document workaround for some functions not triggering module autoload in PS 5.1
 
 v4.4.0
 ------

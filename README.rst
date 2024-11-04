@@ -201,12 +201,28 @@ Run:
 
 Configure the environment as described in the `Configuration`_ section above.
 
+If you are using PowerShell 5.1, some methods may not trigger automatic loading
+of the module. Add this to your ``$Profile`` file to force module loading:
+
+.. code:: ps1
+
+    "Import-Module Tririga-Manage" | Out-file "$Profile" -append
+    "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
+
 From Source
 ~~~~~~~~~~~
 #. Open a PowerShell window in *this* directory.
 #. Run::
 
         .\Install.ps1
+
+If you are using PowerShell 5.1, some methods may not trigger automatic loading
+of the module. Add this to your ``$Profile`` file to force module loading:
+
+.. code:: ps1
+
+    "Import-Module Tririga-Manage" | Out-file "$Profile" -append
+    "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
 
 License
 -------
