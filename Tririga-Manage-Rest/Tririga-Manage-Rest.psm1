@@ -226,11 +226,14 @@ function CallTririgaApiRaw() {
 
     $tririgaSession = $null
 
-    if($sessionTable) {
+    if($tririgaSessionTable) {
+        Write-Verbose "Session Table found"
         $tririgaSession = $tririgaSessionTable[$serverUrlBase]
     } else {
+        Write-Verbose "Initialize Session table"
         $sessionTable = @{}
-        New-Variable -Name tririgaSessionTable -Value $sessionTable -Scope Script -Force -WhatIf:$false
+        # This is now failing to persist!
+        New-Variable -Name tririgaSessionTable -Value $sessionTable -Scope Script -Force -WhatIf:$false -Confirm:$false
     }
 
     # TODO: The session might be stale, we need a way to check and invalidate $tririgaSession
