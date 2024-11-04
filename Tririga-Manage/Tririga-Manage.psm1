@@ -285,7 +285,8 @@ function Get-Service() {
         [Parameter(Position=1)]
         [string]$instance,
         # The number of lines to print from server.log.
-        [int]$tail = 2
+        [int]$tail = 2,
+        [switch]$raw
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
@@ -297,60 +298,64 @@ function Get-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-
-
             $serviceInfo = Invoke-Command -ComputerName $tririgaHost -ScriptBlock { Microsoft.PowerShell.Management\Get-Service "$($using:service)" }
             $diskInfo = Invoke-Command -ComputerName $tririgaHost -ScriptBlock { Get-PSDrive -PSProvider FileSystem }
             $uptime = GetServiceUptime -TririgaHost $tririgaHost -Name $service
 
-            Write-Host -ForegroundColor black -BackgroundColor white "$tririgaEnvName $tririgaInstName"
-
-
-            # Color code status and start type
-            $statusColor = "red"
-            if ($serviceInfo.Status -eq "Running") {
-                $statusColor = "green"
-            }
-
-            $startColor = "red"
-            if ($serviceInfo.StartType -eq "Automatic") {
-                $startColor = "green"
-            }
-
-            Write-Host -NoNewLine -ForegroundColor yellow "  Name: "
-            Write-Host $serviceInfo.Name
-            Write-Host -NoNewLine -ForegroundColor yellow "Status: "
-            Write-Host -ForegroundColor $statusColor $serviceInfo.Status
-            Write-Host -NoNewLine -ForegroundColor yellow " Label: "
-            Write-Host $serviceInfo.DisplayName
-            Write-Host -NoNewLine -ForegroundColor yellow " Start: "
-            Write-Host -ForegroundColor $startColor $serviceInfo.StartType
-
-            Write-Host -NoNewLine -ForegroundColor yellow "Uptime: "
-            "{0:dd}d:{0:hh}h:{0:mm}m:{0:ss}s" -f $uptime
-
-            # Print free disk size
-            $diskInfo | ForEach-Object {
-                $total = $_.Used + $_.Free
-                if ($total -gt 0) {
-                    Write-Host -NoNewLine -ForegroundColor yellow "  Disk: "
-                    $percentUsed = [math]::Round($_.Used / $total * 100)
-                    Write-Host -NoNewLine "$($_.Root) "
-                    $diskColor = "white"
-                    if ($percentUsed -gte 80) {
-                        $diskColor = "red"
-                    }
-                    Write-Host -ForegroundColor $diskColor "$percentUsed% Used"
+            if ($raw) {
+                @{ 
+                    environment = $tririgaEnvName
+                    instance =$tririgaInstName
+                    service = $serviceInfo
+                    disk = $diskInfo
+                    uptime = $uptime
+                    log = Get-Log -NoWait -Environment $tririgaEnvName -Instance $tririgaInstName -Tail $tail
                 }
+            } else {
+                Write-Host -ForegroundColor black -BackgroundColor white "$tririgaEnvName $tririgaInstName"
+
+                # Color code status and start type
+                $statusColor = "red"
+                if ($serviceInfo.Status -eq "Running") {
+                    $statusColor = "green"
+                }
+
+                $startColor = "red"
+                if ($serviceInfo.StartType -eq "Automatic") {
+                    $startColor = "green"
+                }
+
+                Write-Host -NoNewLine -ForegroundColor yellow "  Name: "
+                Write-Host $serviceInfo.Name
+                Write-Host -NoNewLine -ForegroundColor yellow "Status: "
+                Write-Host -ForegroundColor $statusColor $serviceInfo.Status
+                Write-Host -NoNewLine -ForegroundColor yellow " Label: "
+                Write-Host $serviceInfo.DisplayName
+                Write-Host -NoNewLine -ForegroundColor yellow " Start: "
+                Write-Host -ForegroundColor $startColor $serviceInfo.StartType
+
+                Write-Host -NoNewLine -ForegroundColor yellow "Uptime: "
+                "{0:dd}d:{0:hh}h:{0:mm}m:{0:ss}s" -f $uptime
+
+                # Print free disk size
+                $diskInfo | ForEach-Object {
+                    $total = $_.Used + $_.Free
+                    if ($total -gt 0) {
+                        Write-Host -NoNewLine -ForegroundColor yellow "  Disk: "
+                        $percentUsed = [math]::Round($_.Used / $total * 100)
+                        Write-Host -NoNewLine "$($_.Root) "
+                        $diskColor = "white"
+                        if ($percentUsed -gte 80) {
+                            $diskColor = "red"
+                        }
+                        Write-Host -ForegroundColor $diskColor "$percentUsed% Used"
+                    }
+                }
+
+                # Print $tail lines from server.log
+                Write-Host -ForegroundColor yellow "Tririga Log (last $tail lines)"
+                Get-Log -NoWait -Environment $tririgaEnvName -Instance $tririgaInstName -Tail $tail
             }
-
-
-            # Print $tail lines from server.log
-            Write-Host -ForegroundColor yellow "Tririga Log (last $tail lines)"
-            $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
-            $logRoot = Join-Path -Path $tririgaRoot -ChildPath "log"
-            $logPath = Join-Path -Path $logRoot -ChildPath (GetTririgaLogName "server")
-            Get-Content -Tail $tail $logPath
         }
     }
 }
@@ -658,11 +663,16 @@ function Get-Log() {
         # server, om, security, performance or the exact log file name
         [Parameter(Position=2)]
         [string]$log = $null,
-        # The initial number of lines to tail.
-        [int]$tail = 10
+        # The initial number of lines to tail
+        [int]$tail = 10,
+        # If set, do not wait for new log output
+        [switch]$noWait
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    $waitFlag = $true
+    if ($noWait) { $waitFlag = $false }
 
     if ($instances) {
         ForEach($inst in $instances) {
@@ -670,7 +680,7 @@ function Get-Log() {
             $logRoot = Join-Path -Path $tririgaRoot -ChildPath "log"
             $logPath = Join-Path -Path $logRoot -ChildPath (GetTririgaLogName $log)
             if ($PSCmdlet.ShouldProcess("$logPath", "Tail file")) {
-                Get-Content -Tail $tail -Wait $logPath
+                Get-Content -Tail $tail -Wait:$waitFlag $logPath
             }
         }
     }
