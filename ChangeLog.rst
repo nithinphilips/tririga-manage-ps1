@@ -5,6 +5,10 @@ vNEXT
 -----
 * Fix bug getting actual objectmigration agent in PS 5.1
 * Document workaround for some functions not triggering module autoload in PS 5.1
+* Implement ``Write-LogMessage``, ``Get-PlatformLogging``,
+  ``Enable-PlatformLogging``, ``Disable-PlatformLogging``,
+  ``Reset-PlatformLoggingDuplicates``
+* Fix bug in peristing sessions
 
 v4.4.0
 ------

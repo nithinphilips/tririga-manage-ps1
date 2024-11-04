@@ -161,9 +161,17 @@ Available Commands
     Get-TririgaInstance,Gets all known instances in a given environment
     Get-TririgaLog,Tails a TRIRIGA log file
     Open-TririgaLog,Opens a TRIRIGA log file
+    Write-TririgaLogMessage,Write a message to TRIRIGA Log file
     Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
     Import-TririgaOmp,Uploads and imports a local OMP zip file to TRIRIGA
     Save-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
+    Reload-TririgaPlatformLogging,Reload logging categories from disk
+    Disable-TririgaPlatformLogging,Disables TRIRIGA platform Logging for the given categories
+    Enable-TririgaPlatformLogging,Enables TRIRIGA platform Logging for the given categories
+    Get-TririgaPlatformLogging,Gets information about TRIRIGA platform Logging
+    Set-TririgaPlatformLogging,Sets a logging level for the given TRIRIGA platform Logging categories
+    Sync-TririgaPlatformLogging,Reload logging categories from disk
+    Reset-TririgaPlatformLoggingDuplicates,Reset duplicate categories
     Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
     Disable-TririgaService,Disables TRIRIGA service
     Enable-TririgaService,Enables TRIRIGA service

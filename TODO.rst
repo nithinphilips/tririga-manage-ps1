@@ -35,8 +35,7 @@ TODO
 - [ ] Unlock-User
 
 - [ ] Get-Navigation
-
-# Model a create OMP, Add objects, Export, Download process
+- Model a create OMP, Add objects, Export, Download process
 - [ ] Add-ToObjectMigrationPackage (By Name, By ID, All Application Object (various),
 - [ ] New-ObjectMigrationPackage (Empty, By Date
 - [ ] Download-ObjectMigrationPackage
@@ -47,10 +46,14 @@ TODO
 - [ ] Get-PerformanceValue
 - [ ] Get-CachePerformance
 
-- [ ] Write-LogMessage
-- [ ] Enable-LogCategory
+- [X] Write-LogMessage
+- [x] Get-PlatformLogging
+- [x] Set-PlatformLogging
+- [x] Enable-PlatformLogging
+- [x] Disable-PlatformLogging
+- [x] Reset-PlatformLoggingDuplicates
 - [ ] Roll-LogCategory
-- [ ] Disable-LogCategory
+- 
 
 - [ ] Get-Record
 - [ ] Get-RecordPortalLink ?

@@ -418,6 +418,38 @@ function Get-BuildNumber() {
     CallTririgaApi @apiCall
 }
 
+function ResolveLogCategoryDescriptions() {
+    [CmdletBinding()]
+    param(
+        [string]$environment,
+        [string]$instance,
+        [string[]]$category
+    )
+
+    # Lookup category name from the given description
+    $lookupApiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/platformLogging/list"
+        OnlyOnAnyOneInstance = $true
+    }
+
+    $loggingCategories = CallTririgaApi @lookupApiCall
+
+    #$loggingCategories
+
+    $categoryIds = @()
+
+    foreach($categoryItem in $category) {
+        Write-Verbose "Search for $categoryItem"
+        $categoryIds += ($loggingCategories | Where-Object -Property description -Eq $categoryItem)
+    }
+
+    return $categoryIds
+}
+
+
 <#
 .SYNOPSIS
 Gets basic information about a TRIRIGA instance
@@ -914,6 +946,353 @@ function Disable-WorkflowInstance() {
     )
 
     Set-WorkflowInstance -Environment $environment -Value "ERRORS_ONLY" -Instance $instance
+}
+
+<#
+.SYNOPSIS
+Write a message to TRIRIGA Log file
+.DESCRIPTION
+Write a message to TRIRIGA Log file
+
+Uses the /api/v1/admin/platformLogging/write method
+#>
+function Write-LogMessage() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # The value to set.
+        [Parameter(Mandatory, ValueFromPipeline, Position=1)]
+        [string]$message
+    )
+
+    $messageEscaped = [System.Net.WebUtility]::UrlEncode($message)
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "POST"
+        ApiPath = "/api/v1/admin/platformLogging/write?message=$messageEscaped"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment.$instanceLabel", "Write To Log")) {
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Reload logging categories from disk
+.DESCRIPTION
+Reload logging categories from disk
+
+Uses the /api/v1/admin/platformLogging/reload method
+#>
+function Sync-PlatformLogging() {
+    [Alias("Reload-PlatformLogging")]
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/platformLogging/reload"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Sync Log Categories")) {
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Reset duplicate categories
+.DESCRIPTION
+Reset duplicate categories
+
+Uses the /api/v1/admin/platformLogging/resetDuplicates method
+#>
+function Reset-PlatformLoggingDuplicates() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/platformLogging/resetDuplicates"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Reset Log Duplicates")) {
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Gets information about TRIRIGA platform Logging
+.DESCRIPTION
+Enables TRIRIGA platform Logging for the given categories
+
+Uses the /api/v1/admin/platformLogging/list method
+#>
+function Get-PlatformLogging() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # If set, only shows categories that have logging currently enabled
+        [switch]$enabled,
+        # The maximum level to show. Set to higher number (like 99) to see all levels.
+        [int]$level = 1
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/platformLogging/list"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if ($enabled) {
+        CallTririgaApi @apiCall | Where-Object -Property checkedStatus -eq "CHECKED" | Where-Object -Property level -le $level
+    } else {
+        CallTririgaApi @apiCall | Where-Object -Property level -le $level
+    }
+}
+
+<#
+.SYNOPSIS
+Sets a logging level for the given TRIRIGA platform Logging categories
+.DESCRIPTION
+Sets a logging level for the given TRIRIGA platform Logging categories
+
+WARNING: We have not been able to make this API call work.
+
+Uses the /api/v1/admin/platformLogging/debug/manual method
+#>
+function Set-PlatformLogging() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # One or more categories to enable
+        [Parameter(Mandatory, Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$category,
+        # The log level to set for the category
+        [string]$level="TRACE"
+    )
+
+    #TODO: THis has no effect. Not sure what the correct values to pass are
+    $categoryObjects = ResolveLogCategoryDescriptions -Environment $environment -Instance $instance -Category $category
+
+    foreach($categoryObject in $categoryObjects) {
+
+        $categoryName = $categoryObject.Name.split(".")[-1]
+        $categoryNameEscaped = [System.Net.WebUtility]::UrlEncode($categoryName)
+
+        $apiCall  = @{
+            Environment = $environment
+            Instance = $instance
+            ApiMethod = "POST"
+            ApiPath = "/api/v1/admin/platformLogging/debug/manual?categoryPackage=$categoryNameEscaped&level=$level"
+        }
+
+        $instanceLabel = "[All]"
+        if($instance) { $instanceLabel = $instance }
+
+        if($PSCmdlet.ShouldProcess("$environment.$instanceLabel")) {
+            CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Enables TRIRIGA platform Logging for the given categories
+.DESCRIPTION
+Enables TRIRIGA platform Logging for the given categories
+
+1. To see available log categories, run:
+        Get-TririgaPlatformLogging <ENV> -Level 1 | Select-Object description
+   Increase level to see sub categories
+2. The -Category argument is the "description" of Get-TririgaPlatformLogging output .
+   If you are looking in the TRIRIGA Admin Console, it is the name of the category that you see there.
+3. Multiple categories can be given. See examples.
+4. If the description matches multiple categories, all matches will be enabled.
+
+Uses the /api/v1/admin/platformLogging/enable method
+.EXAMPLE
+PS> Enable-PlatformLogging LOCAL "SQL", "Workflow Logging", "Data Integrator (DataImport) Agent"
+#>
+function Enable-PlatformLogging() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # One or more categories to enable
+        [Parameter(Mandatory, Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$category
+    )
+
+    $categoryObjects = ResolveLogCategoryDescriptions -Environment $environment -Instance $instance -Category $category
+
+    foreach($categoryObject in $categoryObjects) {
+
+        $categoryName = $categoryObject.Name.split(".")[-1]
+        $categoryNameEscaped = [System.Net.WebUtility]::UrlEncode($categoryName)
+
+        $apiCall  = @{
+            Environment = $environment
+            Instance = $instance
+            ApiMethod = "POST"
+            ApiPath = "/api/v1/admin/platformLogging/enable?category=$categoryNameEscaped"
+        }
+
+        $instanceLabel = "[All]"
+        if($instance) { $instanceLabel = $instance }
+
+        if($PSCmdlet.ShouldProcess("$environment.$instanceLabel/$($categoryObject.Description)", "Enable Logging")) {
+            CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Disables TRIRIGA platform Logging for the given categories
+.DESCRIPTION
+Disables TRIRIGA platform Logging for the given categories
+
+If no category is given, all currently enabled categories will be disabled.
+
+1. To see available log categories, run:
+        Get-TririgaPlatformLogging <ENV> -Level 1 | Select-Object description
+   Increase level to see sub categories
+2. The -Category argument is the "description" of Get-TririgaPlatformLogging output .
+   If you are looking in the TRIRIGA Admin Console, it is the name of the category that you see there.
+3. Multiple categories can be given. See examples.
+4. If the description matches multiple categories, all matches will be enabled.
+
+Uses the /api/v1/admin/platformLogging/enable method
+.EXAMPLE
+PS> Enable-PlatformLogging LOCAL "SQL", "Workflow Logging", "Data Integrator (DataImport) Agent"
+#>
+function Disable-PlatformLogging() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # One or more categories to enable
+        [Parameter(Position=1)]
+        [string[]]$category
+    )
+
+     $categoryObjects = @()
+
+    if(!$category) {
+        Write-Verbose "No categories specified. All enabled categories will be disabled."
+        $categoryObjects = (Get-PlatformLogging -Environment $environment -Instance $instance -Enabled -Level 99 )
+    } else {
+         $categoryObjects = ResolveLogCategoryDescriptions -Environment $environment -Instance $instance -Category $category
+    }
+
+    foreach($categoryObject in $categoryObjects) {
+
+        $categoryName = $categoryObject.Name.split(".")[-1]
+        $categoryNameEscaped = [System.Net.WebUtility]::UrlEncode($categoryName)
+
+        $apiCall  = @{
+            Environment = $environment
+            Instance = $instance
+            ApiMethod = "POST"
+            ApiPath = "/api/v1/admin/platformLogging/disable?category=$categoryNameEscaped"
+        }
+
+        $instanceLabel = "[All]"
+        if($instance) { $instanceLabel = $instance }
+
+        if($PSCmdlet.ShouldProcess("$environment/$instanceLabel/$($categoryObject.Description)", "Disable Logging")) {
+            CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+        }
+    }
 }
 
 

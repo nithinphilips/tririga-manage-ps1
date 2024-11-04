@@ -345,7 +345,7 @@ function Get-Service() {
                         $percentUsed = [math]::Round($_.Used / $total * 100)
                         Write-Host -NoNewLine "$($_.Root) "
                         $diskColor = "white"
-                        if ($percentUsed -gte 80) {
+                        if ($percentUsed -ge 80) {
                             $diskColor = "red"
                         }
                         Write-Host -ForegroundColor $diskColor "$percentUsed% Used"
