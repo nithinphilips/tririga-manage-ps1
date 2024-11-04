@@ -655,7 +655,7 @@ function Get-ActiveUser() {
 
         $unixTime = (([long]$item.lastTouchDateTime) / 1000)
         $item | Add-Member lastTouch ((([System.DateTimeOffset]::FromUnixTimeSeconds($unixTime)).DateTime).ToString("s"))
-        $item | Add-Member lastTouchDuration ("{0:dd}d:{0:hh}h:{0:mm}m:{0:ss}s" -f (New-TimeSpan –Start $item.lastTouch –End $now))
+        $item | Add-Member lastTouchDuration ("{0:dd}d:{0:hh}h:{0:mm}m:{0:ss}s" -f (New-TimeSpan -Start $item.lastTouch -End $now))
     }
 
 
