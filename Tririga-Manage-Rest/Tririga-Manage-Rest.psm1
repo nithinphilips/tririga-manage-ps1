@@ -362,10 +362,8 @@ function CallTririgaApi() {
             if (!$noTag) {
                 $result = $result | Add-Member -PassThru environment $environment | Add-Member -PassThru instance $inst
             }
-            # Tag with environment info
-            #$result = $result | Add-Member -PassThru environment $environment
-            #$result = $result | Add-Member -PassThru instance $inst
 
+            # Yield Result
             $result
 
             if (!$instance -and $onlyOnAnyOneInstance) {
@@ -634,7 +632,9 @@ function Get-ActiveUser() {
         [Parameter(Position=1)]
         [string]$instance,
         # If set, the response object is returned as-is. Otherwise it is printed as a table.
-        [switch]$raw = $false
+        [switch]$raw,
+        # If set, and not $raw, only print unique users no matter how many sessions they have
+        [switch]$unique
     )
 
     $apiCall = @{
@@ -645,6 +645,14 @@ function Get-ActiveUser() {
     }
 
     $resultHash = (CallTririgaApi @apiCall).Replace('eMail', 'email1') | ConvertFrom-Json
+
+    # If no -Instance value, then $resultHash is an array of array. Otherwise it is an array of objects.
+    # Unroll array of arrays into an array of objects.
+    if(!$instance) {
+        $newResultHash = @()
+        $resultHash | ForEach-Object { $newResultHash += $_ }
+        $resultHash = $newResultHash
+    }
 
     $now = Get-Date # -AsUTC Only in PS 7
 
@@ -662,7 +670,11 @@ function Get-ActiveUser() {
     if($raw) {
         $resultHash
     } else {
-        $resultHash | Select-Object userAccount,fullName,email,lastTouchDuration
+        if ($unique) {
+            $resultHash | Sort-Object -Property userAccount -Unique | Select-Object userAccount,fullName,email,lastTouchDuration
+        } else {
+            $resultHash | Select-Object userAccount,fullName,email,lastTouchDuration
+        }
     }
 
 }
