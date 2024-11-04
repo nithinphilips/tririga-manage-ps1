@@ -6,9 +6,11 @@
 $script:ModuleRoot = $PSScriptRoot
 $script:ModuleVersion = (Import-PowerShellDataFile -Path "$($script:ModuleRoot)\Tririga-Manage.psd1").ModuleVersion
 
+$RestPrefix = (Get-Module Tririga-Manage-Rest).Prefix
+
 # Tririga-Manage-Rest is published with a prefix
 # Re-import it in this context without a prefix
-Import-Module Tririga-Manage-Rest -Prefix "" -ErrorAction 'SilentlyContinue'
+#Import-Module Tririga-Manage-Rest -Prefix "" -ErrorAction 'SilentlyContinue'
 
 #$DBeaverBin="C:\Users\Nithin\AppData\Local\DBeaver\dbeaver.exe"
 
@@ -67,23 +69,43 @@ function GetTririgaObjectMigrationInstance([string]$environment, [boolean]$warn 
 
     $instances = (GetTririgaInstances -environment $environment -instance $null -warn $False)
 
-    try {
-        if(Get-Command -Module Tririga-Manage-Rest -Name Get-AgentHost -ErrorAction 'SilentlyContinue') {
-            Write-Verbose "Get-AgentHost command available. Trying to find the actual ObjectMigrationAgent server"
-            $realOmAgentHost = Get-AgentHost -Environment $environment -Agent ObjectMigrationAgent
-            if ($realOmAgentHost) {
-                ForEach($inst in $instances) {
-                    Write-Verbose "Check: $($inst["InstanceName"]) or $($inst["Instance"]) -eq $realOmAgentHost = $($inst["InstanceName"] -eq $realOmAgentHost -or $inst["Instance"] -eq $realOmAgentHost)"
-                    if ($inst["InstanceName"] -eq $realOmAgentHost -or $inst["Instance"] -eq $realOmAgentHost) {
-                        Write-Verbose "ObjectMigration agent for $environment actually runs on $($inst["Instance"])"
-                        return $inst
-                    }
+    $getAgentcommandName = "Get-$($RestPrefix)AgentHost"
+
+    Write-Verbose "The prefixed name of Get-AgentHost is $getAgentcommandName"
+
+    if(Get-Command -Module Tririga-Manage-Rest -Name $getAgentcommandName -ErrorAction 'SilentlyContinue') {
+        Write-Verbose "$getAgentcommandName command available. Trying to find the actual ObjectMigrationAgent server"
+        $realOmAgentHost = & $getAgentcommandName -Environment $environment -Agent ObjectMigrationAgent
+        if ($realOmAgentHost) {
+            ForEach($inst in $instances) {
+                Write-Verbose "Check: $($inst["InstanceName"]) or $($inst["Instance"]) -eq $realOmAgentHost = $($inst["InstanceName"] -eq $realOmAgentHost -or $inst["Instance"] -eq $realOmAgentHost)"
+                if ($inst["InstanceName"] -eq $realOmAgentHost -or $inst["Instance"] -eq $realOmAgentHost) {
+                    Write-Verbose "ObjectMigration agent for $environment actually runs on $($inst["Instance"])"
+                    return $inst
                 }
             }
         }
-    } catch {
-        Write-Verbose "Get-TririgaAgentHost command is not available."
+    } else {
+        Write-Verbose "$getAgentcommandName command is not available."
     }
+
+    # In PS 5.1, reimporting the module without a prefix deoes not work! Try this fallback
+    #if(Get-Command -Module Tririga-Manage-Rest -Name Get-TririgaAgentHost -ErrorAction 'SilentlyContinue') {
+    #    Write-Verbose "Get-TririgaAgentHost command available. Trying to find the actual ObjectMigrationAgent server"
+    #    $realOmAgentHost = Get-TririgaAgentHost -Environment $environment -Agent ObjectMigrationAgent
+    #    if ($realOmAgentHost) {
+    #        ForEach($inst in $instances) {
+    #            Write-Verbose "Check: $($inst["InstanceName"]) or $($inst["Instance"]) -eq $realOmAgentHost = $($inst["InstanceName"] -eq $realOmAgentHost -or $inst["Instance"] -eq $realOmAgentHost)"
+    #            if ($inst["InstanceName"] -eq $realOmAgentHost -or $inst["Instance"] -eq $realOmAgentHost) {
+    #                Write-Verbose "ObjectMigration agent for $environment actually runs on $($inst["Instance"])"
+    #                return $inst
+    #            }
+    #        }
+    #    }
+    #} else {
+    #    Write-Verbose "Get-TririgaAgentHost command is not available."
+    #}
+
 
     Write-Verbose "Fallback to hard-coded ObjectMigrationAgent flag"
     ForEach($inst in $instances) {

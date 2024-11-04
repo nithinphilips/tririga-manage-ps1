@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+vNEXT
+-----
+* Fix bug getting actual objectmigration agent in PS 5.1
+
 v4.4.0
 ------
 * Fix bug in REST module returning results twice

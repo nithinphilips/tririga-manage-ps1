@@ -105,6 +105,11 @@ To publish the modules to Gitea
 #. Push all changes::
 
         git push && git push --tags
+        git push gitea && git push gitea --tags
+
+#. Check for issues::
+
+        make release-check
 
 #. Release::
 

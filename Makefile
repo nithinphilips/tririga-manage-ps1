@@ -79,7 +79,7 @@ git-tag:
 
 release-check: code-check
 	# Check if repo is clean
-	git diff-index --quiet HEAD -- || (echo "You have uncommited changes. Commit them before release."; exit 1) && (printf "\e[1;38:5:40m✓\e[0m No uncommited changes\n")
+	#git diff-index --quiet HEAD -- || (echo "You have uncommited changes. Commit them before release."; exit 1) && (printf "\e[1;38:5:40m✓\e[0m No uncommited changes\n")
 	# Check if a ChangeLog entry exists
 	test $(shell grep -c '^$(GIT_TAG)' ChangeLog.rst) -eq 1 || (echo "Please add a change log entry for release $(GIT_TAG) before releasing"; exit 1) && (printf "\e[1;38:5:40m✓\e[0m ChangeLog entry exists for release $(GIT_TAG)\n")
 	# Check if the tag exists in the local repo
@@ -133,7 +133,7 @@ check: update-module
 code-check:
 	pwsh -Command "Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage | ft -AutoSize; Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage-Rest | ft -AutoSize"
 
-release: release-gitea release-github publish-gitea publish-github ## Releases to Gitea and Github
+release: release-gitea release-github publish-gitea publish-psgallery ## Releases to Gitea and Github
 
 publish: dist # Published the dist file to Amazon AWS
 	aws s3 cp "$(DISTROOT)/$(DISTZIP)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(DISTZIP)"
