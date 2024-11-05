@@ -547,12 +547,14 @@ function Get-ServerXml() {
         [Alias("Env", "E")]
         [string]$environment,
         # The TRIRIGA instance within the environment to use.
-        # If omitted, command will act on all instances.
+        # If omitted, command will run on one instance. Set -All switch to run on all instances.
         [Alias("Inst", "I")]
         [Parameter(Position=1)]
         [string]$instance,
-        # By default the XML response is printed as text. Set this flag to get a PSObject instead
-        [switch]$raw
+        # By default the XML response is printed as text. Set this switch to get a PSObject instead
+        [switch]$raw,
+        # By default only one instance is queried. Set this switch to query all instances.
+        [switch]$all
     )
 
     $fileEscaped = [System.Net.WebUtility]::UrlEncode($file)
@@ -562,7 +564,7 @@ function Get-ServerXml() {
         Instance = $instance
         ApiMethod = "GET"
         ApiPath = "/api/v1/admin/systemInfo/properties/serverXml"
-        OnlyOnAnyOneInstance = $true
+        OnlyOnAnyOneInstance = !$all
         NoTag = $true
     }
 
@@ -584,11 +586,73 @@ function Get-ServerXml() {
 
 <#
 .SYNOPSIS
-Lists a settings in a TRIRIGA properties file
+Gets a setting in a TRIRIGA properties file
 .DESCRIPTION
-Lists a settings in a TRIRIGA properties file
+Gets a setting in a TRIRIGA properties file
 
 Uses the /api/v1/admin/systemInfo/properties/list method
+.INPUTS
+An array of property names
+
+.OUTPUTS
+A PSCustomObject with properties from file.
+
+The object will also have these 3 properties: environment, instance, file.
+
+These allow you to pipe the output into Set-Property.
+
+.EXAMPLE
+PS> Get-TririgaProperty LOCAL
+Reserve                            : N
+USE_AUTO_COMPLETE_IN_SMART_SECTION : Y
+...
+file                               : TRIRIGAWEB
+environment                        : LOCAL
+instance                           : ONE
+
+...
+
+.EXAMPLE
+PS> Get-TririgaProperty LOCAL -Instance ONE
+Reserve                            : N
+USE_AUTO_COMPLETE_IN_SMART_SECTION : Y
+...
+file                               : TRIRIGAWEB
+environment                        : LOCAL
+instance                           : ONE
+
+.EXAMPLE
+PS> Get-TririgaProperty LOCAL SSO
+SSO         : N
+file        : TRIRIGAWEB
+environment : LOCAL
+instance    : ONE
+
+.EXAMPLE
+PS> Get-TririgaProperty LOCAL SSO, SSO_REMOTE_USER
+environment     : LOCAL
+instance        : ONE
+file            : TRIRIGAWEB
+SSO             : N
+SSO_REMOTE_USER : Y
+
+.EXAMPLE
+PS> @("SSO", "SSO_REMOTE_USER") | Get-TririgaProperty LOCAL
+environment     : LOCAL
+instance        : ONE
+file            : TRIRIGAWEB
+SSO             : N
+SSO_REMOTE_USER : Y
+
+.EXAMPLE
+PS> Get-TririgaProperty LOCAL FRONT_END_SERVER, SSO | %  { $_.FRONT_END_SERVER = $_.FRONT_END_SERVER.replace("http", "https"); $_ } | Set-TririgaProperty
+environment      : LOCAL
+instance         : ONE
+file             : TRIRIGAWEB
+FRONT_END_SERVER : https://localhost:9080/
+SSO              : N
+
+
 #>
 function Get-Property() {
     [CmdletBinding()]
@@ -599,17 +663,18 @@ function Get-Property() {
         [Alias("Env", "E")]
         [string]$environment,
         # The TRIRIGA instance within the environment to use.
-        # If omitted, command will act on all instances.
+        # If omitted, command will act on all instances
         [Alias("Inst", "I")]
         [Parameter()]
         [string]$instance,
         # The properties file to load (without the .properties extension)
         [Parameter()]
+        [ValidateNotNullOrEmpty()]
         [string]$file="TRIRIGAWEB",
         # Name of a single property to set
-        [Parameter(Position=1)]
+        [Parameter(Position=1, ValueFromPipeline)]
         [ValidateNotNullOrEmpty()]
-        [string]$property
+        [string[]]$property
     )
 
     $fileEscaped = [System.Net.WebUtility]::UrlEncode($file)
@@ -619,16 +684,18 @@ function Get-Property() {
         Instance = $instance
         ApiMethod = "GET"
         ApiPath = "/api/v1/admin/systemInfo/properties/list?f=$fileEscaped"
-        OnlyOnAnyOneInstance = $true
     }
 
-    $instanceLabel = "[One]"
+    $instanceLabel = "[All]"
     if($instance) { $instanceLabel = $instance }
 
+    $result = CallTririgaApi @apiCall | Add-Member -PassThru "file" $file
+
     if ($property) {
-        CallTririgaApi @apiCall | Select-Object $property
+        $propertyFilter = @("environment", "instance", "file") + $property
+        $result | Select-Object $propertyFilter
     } else {
-        CallTririgaApi @apiCall
+        $result
     }
 }
 
@@ -639,35 +706,71 @@ Sets settings in a TRIRIGA properties file
 Sets settings in a TRIRIGA properties file
 
 Uses the /api/v1/admin/systemInfo/properties/update method
+.INPUTS
+A hashtable with the properties and values to set
+
+A PSObject with the properties and values to set and environment, instance and file properties.
+.OUTPUTS
+A PSCustomObject with changed properties
+
+The object will also have these 3 properties: environment, instance, file.
+
 .EXAMPLE
-PS> Set-TririgaProperty LOCAL SSO Y
-...
-SSO: Y
-...
+PS> Set-TririgaProperty LOCAL SSO N
+environment instance file       SSO
+----------- -------- ----       ---
+LOCAL       ONE      TRIRIGAWEB N
+
+.EXAMPLE
 PS> @{ "SSO" = "N" } | Set-TririgaProperty LOCAL
-...
-SSO: N
-...
-PS> @{ "SSO" = "N"; "SSO_REMOTE_USER" = "Y" } | Set-TririgaProperty LOCAL -Verbose
-...
-            SSO: N
-SSO_REMOTE_USER: Y
-...
+environment     : LOCAL
+instance        : ONE
+file            : TRIRIGAWEB
+SSO             : N
+
+.EXAMPLE
+
+PS> @{ "SSO" = "N"; "SSO_REMOTE_USER" = "Y" } | Set-TririgaProperty LOCAL
+environment     : LOCAL
+instance        : ONE
+file            : TRIRIGAWEB
+SSO_REMOTE_USER : Y
+SSO             : N
+
+
+.EXAMPLE
+PS> Get-TririgaProperty LOCAL FRONT_END_SERVER, SSO | %  { $_.FRONT_END_SERVER = $_.FRONT_END_SERVER.replace("http", "https"); $_ } | Set-TririgaProperty
+environment      : LOCAL
+instance         : ONE
+file             : TRIRIGAWEB
+FRONT_END_SERVER : https://localhost:9080/
+SSO              : N
+
+.EXAMPLE
+PS> [pscustomobject]@{ "environment"= "LOCAL"; "instance"= "ONE"; "file"= "TRIRIGAWEB"; "FRONT_END_SERVER"= "http://localhost:9080/"; "SSO"= "N"; } | Set-TririgaProperty
+environment      : LOCAL
+instance         : ONE
+file             : TRIRIGAWEB
+FRONT_END_SERVER : http://localhost:9080/
+SSO              : N
+
 #>
 function Set-Property() {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
-        [Parameter(Mandatory, Position=0)]
+        [Parameter(Position=0, ValueFromPipelineByPropertyName )]
         [ValidateNotNullOrEmpty()]
         [Alias("Env", "E")]
         [string]$environment,
         # The TRIRIGA instance within the environment to use.
         # If omitted, command will act on all instances.
         [Alias("Inst", "I")]
-        [Parameter()]
+        [Parameter(ValueFromPipelineByPropertyName )]
         [string]$instance,
         # The properties file to load (without the .properties extension)
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
         [string]$file="TRIRIGAWEB",
         # Name of a single property to set
         [Parameter(ParameterSetName='SingleProperty', Position=1)]
@@ -679,37 +782,58 @@ function Set-Property() {
         [string]$value,
         # An object with multiple properties
         [Parameter(ValueFromPipeline, ParameterSetName = 'PropertyObject')]
-        [object]$propertyObject
+        [object]$propertyObject,
+        # If set, the entire property file after the update is printed.
+        # Otherwise, only the changes properties are printed
+        [switch]$full
     )
 
-    $fileEscaped = [System.Net.WebUtility]::UrlEncode($file)
+    Process {
 
-    if(!$propertyObject) {
-        if(!$property -or !$value) {
-           throw "You must set one of -Property and -Value OR -PropertyObject"
+        $fileEscaped = [System.Net.WebUtility]::UrlEncode($file)
+
+        if(!$propertyObject) {
+            if(!$property -or !$value) {
+            throw "You must set one of -Property and -Value OR -PropertyObject"
+            }
+
+            $propertyObject = @{
+                "$property" = "$value"
+            }
+
+            #$MyJsonVariable = $MyJsonHashTable | ConvertTo-Json
+            Write-Verbose "Construct propertyObject: $property = $value"
+        } else {
+            # Remove non TRIRIGA properties (not strictly required, tririga will ignore these, but do it anyways)
+            # Works for hashtable and psobject
+            $propertyObject = $propertyObject | Select-Object -Property * -ExcludeProperty environment, instance, file
+            Write-Verbose "Remove environment, instance, file from propertyObject"
         }
 
-        $propertyObject = @{
-            "$property" = "$value"
+        $apiCall = @{
+            Environment = $environment
+            Instance = $instance
+            ApiMethod = "PUT"
+            ApiPath = "/api/v1/admin/systemInfo/properties/update?f=$fileEscaped"
+            ApiBody = $propertyObject
         }
 
-        #$MyJsonVariable = $MyJsonHashTable | ConvertTo-Json
-        Write-Verbose "Construct propertyObject: $property = $value"
-    }
+        $instanceLabel = "[All]"
+        if($instance) { $instanceLabel = $instance }
 
-    $apiCall = @{
-        Environment = $environment
-        Instance = $instance
-        ApiMethod = "PUT"
-        ApiPath = "/api/v1/admin/systemInfo/properties/update?f=$fileEscaped"
-        ApiBody = $propertyObject
-    }
+        $properties = @()
+        if($propertyObject -is [PSObject]) {
+            $properties = $propertyObject.PSObject.Properties | ForEach-Object { $_.Name }
+        } else {
+            $properties = $propertyObject.keys | ForEach-Object { "$_" }
+        }
+        $propertyFilter = @("environment", "instance", "file") + $properties
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
+        Write-Verbose "Using filter: $propertyFilter"
 
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Set Property")){
-        CallTririgaApi @apiCall
+        if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Set Property [$properties]")){
+            CallTririgaApi @apiCall | Add-Member -PassThru "file" $file | Select-Object $propertyFilter
+        }
     }
 }
 
@@ -769,7 +893,9 @@ function Get-Summary() {
         # The TRIRIGA instance within the environment to use.
         # If omitted, command will act on the first instance.
         [Alias("Inst", "I")]
-        [string]$instance
+        [string]$instance,
+        # By default only one instance is queried. Set this switch to query all instances.
+        [switch]$all
     )
 
     $apiCall = @{
@@ -777,7 +903,7 @@ function Get-Summary() {
         Instance = $instance
         ApiMethod = "GET"
         ApiPath = "/api/v1/admin/summary"
-        OnlyOnAnyOneInstance = $true
+        OnlyOnAnyOneInstance = !$all
     }
 
     CallTririgaApi @apiCall
@@ -1043,6 +1169,7 @@ function Stop-Agent() {
         NoTag = $true
     }
 
+    # TODO: Avoid conversion. ConvertPSObjectToHashtable could infinite loop.
     $agentInfo = CallTririgaApi @statusApiCall | ConvertPSObjectToHashtable
 
     ForEach($agent in $agentInfo.Keys) {

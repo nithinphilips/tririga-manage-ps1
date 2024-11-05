@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+v NEXT
+------
+* Support piping output of ``Get-TririgaProperty`` into ``Set-TririgaProperty``
+* Add ``-All`` switch to ``Get-TririgaSummary`` and ``Get-TririgaServerXml`` to
+  optionally run against all instances.
+
 v4.6.0
 ------
 * Implement these new REST API methods
@@ -11,7 +17,7 @@ v4.6.0
   * ``Get-TririgaProperty``
   * ``Set-TririgaProperty``
   * ``Add-TririgaPlatformLoggingCategory``
-  * ``Get-ServerXml``
+  * ``Get-TririgaServerXml``
 
 v4.5.0
 ------

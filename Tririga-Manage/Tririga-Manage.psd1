@@ -112,14 +112,11 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = '
--   Implement these new REST API methods
-    -   `Get-TririgaServerInformation`
-    -   `Lock-TririgaSystem`
-    -   `Unlock-TririgaSystem`
-    -   `Get-TririgaProperty`
-    -   `Set-TririgaProperty`
-    -   `Add-TririgaPlatformLoggingCategory`
-    -   `Get-ServerXml`
+-   Fix bug getting actual object migration agent in PS 5.1
+-   Improve output of `Get-TririgaService`. It now has a `-Raw` switch.
+-   Document workaround for some functions not triggering module autoload in PS 5.1
+-   Implement `Write-TririgaLogMessage`, `Get-TririgaPlatformLogging`, `Enable-TririgaPlatformLogging`, `Disable-TririgaPlatformLogging`, `Reset-TririgaPlatformLoggingDuplicates`
+-   Fix bug in peristing sessions
 '
 
         # Prerelease string of this module

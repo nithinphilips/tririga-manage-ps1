@@ -21,7 +21,8 @@ DISTZIP:=tririga-manage-ps1-$(VERSION).zip
 
 DIST_EXTRAS:=Install.ps1 environments.sample.psd1 README.rst ChangeLog.rst README.docx ChangeLog.docx
 
-.INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md environments.sample.psd1.tmp
+.INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv Tririga-Manage.processed.csv Tririga-Manage-Rest.processed.csv Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp \
+	all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md environments.sample.psd1.tmp 
 
 # Extract a changelog for a specific version from ChangeLog.rst
 # cargo install markdown-extract
@@ -37,9 +38,15 @@ ChangeLog.%.md: ChangeLog.md
 # Select-Object Name,Synopsis,ModuleName
 %.csv: $(PSFILES)
 	pwsh -Command "\$$env:PSModulePath = (Resolve-Path .).Path; Get-Command -Module $* | % {\$$h=(Get-Help \$$_.Name); if(\$$_.CommandType -eq \"Alias\") {Add-Member -Force -InputObject \$$h "Name" \$$_.Name}; \$$h} | Select-Object Name,Synopsis | Export-CSV $*.csv"
+	mlr --icsv --ocsv put '$$SortName = splitax($$Name, "-")[2]' then sort -f SortName then cut -x -f SortName then clean-whitespace $@ > $@.tmp
+	mv $@.tmp $@
 
-all-docs.csv: Tririga-Manage.csv Tririga-Manage-Rest.csv
-	mlr --icsv --ocsv cat then put '$$SortName = splitax($$Name, "-")[2]' then sort -f SortName then cut -x -f SortName then clean-whitespace $^ > $@
+%.rst.tmp: %.csv
+	echo ".. csv-table::" > $@
+	echo "    :header-rows: 1" >> $@
+	echo "    :stub-columns: 1" >> $@
+	echo "" >> $@
+	sed 's/^/    /g' $< >> $@
 
 $(DISTROOT)/$(DISTZIP): update-module update-readme $(DIST_EXTRAS) $(PSFILES)
 	mkdir -p $(DISTDIR) $(DISTDIR)/Tririga-Manage/$(VERSION) $(DISTDIR)/Tririga-Manage-Rest/$(VERSION)
@@ -49,12 +56,6 @@ $(DISTROOT)/$(DISTZIP): update-module update-readme $(DIST_EXTRAS) $(PSFILES)
 	cd $(DISTROOT) && zip -r $(DISTZIP) $(DISTBASE)/
 	rm -rf $(DISTDIR)
 
-all-docs.tmp: all-docs.csv
-	echo ".. csv-table::" > $@
-	echo "    :header-rows: 1" >> $@
-	echo "    :stub-columns: 1" >> $@
-	echo "" >> $@
-	sed 's/^/    /g' $< >> $@
 
 environments.sample.psd1.tmp: environments.sample.psd1
 	echo "   .. code:: ps1" > $@
@@ -65,10 +66,12 @@ environments.sample.psd1.tmp: environments.sample.psd1
 update-module: ChangeLog.$(GIT_TAG).md
 	pwsh Install.ps1 -UpdateModule -NoInstallModule -ReleaseNoteFile $<
 
-update-readme: all-docs.tmp environments.sample.psd1.tmp
+update-readme: Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp environments.sample.psd1.tmp
 	# Delete everything between these lines
-	sed -i -e '/BEGIN TABLE/,/END TABLE/{//!d}' README.rst
-	sed -i -e '/BEGIN TABLE/ r all-docs.tmp' README.rst
+	sed -i -e '/BEGIN TABLE TRIRIGA MANAGE/,/END TABLE TRIRIGA MANAGE/{//!d}' README.rst
+	sed -i -e '/BEGIN TABLE TRIRIGA MANAGE/ r Tririga-Manage.rst.tmp' README.rst
+	sed -i -e '/BEGIN TABLE TRIRIGA MANAGE REST/,/END TABLE TRIRIGA MANAGE REST/{//!d}' README.rst
+	sed -i -e '/BEGIN TABLE TRIRIGA MANAGE REST/ r Tririga-Manage-Rest.rst.tmp' README.rst
 	sed -i -e '/BEGIN CONFIG SAMPLE/,/END CONFIG SAMPLE/{//!d}' README.rst
 	sed -i -e '/BEGIN CONFIG SAMPLE/ r environments.sample.psd1.tmp' README.rst
 
@@ -135,7 +138,7 @@ code-check:
 
 release: release-gitea release-github publish-gitea publish-psgallery ## Releases to Gitea and Github
 
-publish: dist # Published the dist file to Amazon AWS
+publish-aws: dist # Published the dist file to Amazon AWS
 	aws s3 cp "$(DISTROOT)/$(DISTZIP)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(DISTZIP)"
 
 help: ## This help dialog.

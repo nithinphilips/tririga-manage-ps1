@@ -8,8 +8,10 @@ using the TRIRIGA REST management API.
 Features
 --------
 * Simple way to refer to instances
-* Where applicable, commands can operate on all instances in an environment at once
+* Where applicable, commands can operate on all instances in an environment at
+  once
 * Confirmation when working on production instances
+* The outputs are PowerShell objects and allows the commands to be composable.
 
 Requirements
 ------------
@@ -139,9 +141,271 @@ in the environment, depending on the nature of the command. With the sample
 configuration above, you can use either ``-Instance ONE`` or ``-Instance TWO``
 with ``-Environment LOCAL``.
 
+Tririga-Manage-Rest Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+Let's start with getting information about the environment. Use
+``Get-TririgaSummary`` command:
+
+.. code:: ps1
+
+    PS> Get-TririgaSummary LOCALTWO
+    operatingSytem               : Linux amd64 null
+    noofcpus                     : 4
+    baseApplicationServer        : Liberty
+    users                        : 55 users online
+    ...
+    environment                  : LOCALTWO
+    instance                     : TWO
+
+The output is an object that you can manipulate using `PowerShell object
+commands
+<https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/03-discovering-objects>`_.
+
+For example, to get just the ``operatingSytem`` [sic] value, run:
+
+.. code:: ps1
+
+    PS> Get-TririgaSummary LOCALTWO | Select-Object operatingSytem
+    operatingSytem
+    --------------
+    Linux amd64 null
+
+This output is still an object. To get just the text value:
+
+.. code:: ps1
+
+    PS> Get-TririgaSummary LOCALTWO | %{ $_.operatingSytem } 
+    Linux amd64 null
+
+If you want to run this against all your environments, you can run:
+
+.. code:: ps1
+
+    PS> @("LOCAL", "LOCALTWO") | %{ Get-TririgaSummary -All $_ } | Select-Object operatingSytem, environment, instance
+    operatingSytem   environment instance
+    --------------   ----------- --------
+    Linux amd64 null LOCAL       ONE
+    Linux amd64 null LOCALTWO    TWO
+    Linux amd64 null LOCALTWO    ONE
+
+----
+
+To see all currently active sessions:
+
+.. code:: ps1
+
+    PS> Get-TririgaActiveUser LOCAL | Sort-Object userAccount -Unique
+    userAccount fullName       email                    lastTouchDuration
+    ----------- --------       -----                    -----------------
+    system      System System                           00d:03h:17m:00s
+    system      System System                           00d:03h:17m:00s
+    system      System System                           00d:03h:17m:00s
+    system      System System                           00d:03h:17m:00s
+
+There are a few duplicate entires here. To get just the unique users:
+
+.. code:: ps1
+
+    PS> Get-TririgaActiveUser LOCAL | Sort-Object userAccount -Unique
+    userAccount fullName       email                    lastTouchDuration
+    ----------- --------       -----                    -----------------
+    system      System System                           00d:03h:17m:00s
+
+For convenience, the ``Get-TririgaActiveUser`` command also has a ``-Unique``
+switch, which does the same thing:
+
+.. code:: ps1
+
+    PS> Get-TririgaActiveUser LOCAL -Unique
+    userAccount fullName       email                    lastTouchDuration
+    ----------- --------       -----                    -----------------
+    system      System System                           00d:03h:17m:00s
+
+Even if this switch was not present, using PowerShell you can filter and
+manipulate the output to get exactly the format you need.
+
+----
+
+Some commands run against all instances in the environment by default. This is
+done in cases where the output might be different from each instance
+
+Let's run ``Get-TririgaBuildNumber``
+
+.. code:: ps1
+
+    PS> Get-TririgaBuildNumber LOCALTWO
+
+    buildNumber         : 301221
+    ...
+    environment         : LOCALTWO
+    instance            : TWO
+
+    buildNumber         : 301221
+    ...
+    environment         : LOCALTWO
+    instance            : ONE
+
+You can see that it ran against both instances in the ``LOCALTWO`` environment
+and returned two objects.
+
+Suppose, you want to check if all the instances in your environment have
+the same build number:
+
+.. code:: ps1
+
+    PS> Get-TririgaBuildNumber LOCALTWO | % { $_.buildNumber } | Sort-Object -Unique
+    301221
+
+By showing only unique build numbers, you can quickly verify that all instances
+have the same build number.
+
+----
+
+Other commands run against only one instance in the environment by default.
+This is done in cases where the output is the same no matter what instance you
+query.
+
+Let's check the status of all agents. You will get the same result no matter
+what server you query:
+
+.. code:: ps1
+
+    PS> Get-TririgaAgent LOCAL
+    ID  Agent                        Hostname  Status
+    --  -----                        --------  ------
+    210 SNMPAgent                              Not Running
+    211 IncomingMailAgent            <ANY>     Running
+    212 ObjectMigrationAgent         <ANY>     Running
+    213 DataImportAgent              localhost Running
+    202 WFAgent                      localhost Running
+    203 ObjectPublishAgent           <ANY>     Running
+    214 SchedulerAgent               localhost Running
+    204 ReportQueueAgent             <ANY>     Running
+    215 WFNotificationAgent          <ANY>     Running
+    216 DataConnectAgent                       Not Running
+    205 ReserveSMTPAgent                       Not Running
+    206 PlatformMaintenanceScheduler <ANY>     Running
+    207 ExtendedFormulaAgent         <ANY>     Running
+    208 FormulaRecalcAgent           <ANY>     Running
+    209 WFFutureAgent                <ANY>     Running
+
+Again, we can apply an ad-hoc filter to see just the running ones:
+
+.. code:: ps1
+
+    PS> Get-TririgaAgent LOCAL | ? Status -eq Running
+    ID  Agent                        Hostname  Status
+    --  -----                        --------  ------
+    211 IncomingMailAgent            <ANY>     Running
+    212 ObjectMigrationAgent         <ANY>     Running
+    213 DataImportAgent              localhost Running
+    202 WFAgent                      localhost Running
+    203 ObjectPublishAgent           <ANY>     Running
+    214 SchedulerAgent               localhost Running
+    204 ReportQueueAgent             <ANY>     Running
+    215 WFNotificationAgent          <ANY>     Running
+    206 PlatformMaintenanceScheduler <ANY>     Running
+    207 ExtendedFormulaAgent         <ANY>     Running
+    208 FormulaRecalcAgent           <ANY>     Running
+    209 WFFutureAgent                <ANY>     Running
+
+This is a common need, so you can use the convenience shortcut:
+
+.. code:: ps1
+
+    PS> Get-TririgaAgent LOCAL -Running
+
+----
+
+Operations that affect the system state all have a ``-WhatIf`` and ``-Confirm`` switches.
+
+Use ``-WhatIf`` switch to preview the changes:
+
+.. code:: ps1
+
+    > Stop-TririgaAgent LOCAL WFAgent -WhatIf
+    What if: Performing the operation "Stop" on target "WFAgent [202] on localhost".
+
+Use ``-Confirm`` switch to review each change:
+
+.. code:: ps1
+
+    > Stop-TririgaAgent LOCAL WFAgent -Confirm
+
+    Confirm
+    Are you sure you want to perform this action?
+    Performing the operation "Stop" on target "WFAgent [202] on localhost".
+    [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"): N
+
+You will see one prompt for each change the the command is about to make. For
+example, with Workflow Agents, you may have several agents. You will be asked
+to confirm *Stop* on each of these agents.
+
+----
+
+Some commands can be chained together to perform complex operations.
+
+For example, suppose you want to take the ``FRONT_END_SERVER`` setting on all
+your instances (which may all have different values,) and change the protocol
+to ``https`` while preserving the rest of the value. To do that, run:
+
+.. code:: ps1
+
+
+    PS> Get-TririgaProperty LOCAL FRONT_END_SERVER
+    environment instance file       FRONT_END_SERVER
+    ----------- -------- ----       ----------------
+    LOCAL       ONE      TRIRIGAWEB http://localhost:9080/
+
+    PS> Get-TririgaProperty LOCAL FRONT_END_SERVER `
+        | %  { $_.FRONT_END_SERVER = $_.FRONT_END_SERVER.replace("http:", "https:"); $_ } `
+        | Set-TririgaProperty
+    environment instance file       FRONT_END_SERVER
+    ----------- -------- ----       ----------------
+    LOCAL       ONE      TRIRIGAWEB https://localhost:9080/
+
+
 Available Commands
 ~~~~~~~~~~~~~~~~~~
-.. ##BEGIN TABLE
+Tririga-Manage Module
+^^^^^^^^^^^^^^^^^^^^^
+The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
+
+.. ##BEGIN TABLE TRIRIGA MANAGE
+.. csv-table::
+    :header-rows: 1
+    :stub-columns: 1
+
+    Name,Synopsis
+    Open-TririgaDatabase,Opens Dbeaver and connects to the TRIRIGA database
+    Get-TririgaEnvironment,Gets all known environments
+    Open-TririgaFolder,Opens a TRIRIGA installation directory path
+    Enter-TririgaHost,Starts a remote powershell session to a TRIRIGA instance
+    Get-TririgaInstance,Gets all known instances in a given environment
+    Get-TririgaLog,Tails a TRIRIGA log file
+    Open-TririgaLog,Opens a TRIRIGA log file
+    Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
+    Import-TririgaOmp,Uploads and imports a local OMP zip file to TRIRIGA
+    Save-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
+    Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
+    Disable-TririgaService,Disables TRIRIGA service
+    Enable-TririgaService,Enables TRIRIGA service
+    Get-TririgaService,Get the current status of TRIRIGA service
+    Restart-TririgaService,Restarts TRIRIGA service
+    Start-TririgaService,Starts TRIRIGA service
+    Stop-TririgaService,Stops TRIRIGA service
+    Open-TririgaWasFolder,Opens a WebSphere profile path
+    Get-TririgaWasLog,Tails a WebSphere log file
+    Open-TririgaWasLog,Opens a WebSphere log file
+    Open-TririgaWasWeb,Opens the WebSphere Admin Console
+    Open-TririgaWeb,Opens a TRIRIGA environment
+.. ##END TABLE TRIRIGA MANAGE
+
+Tririga-Manage-Rest Module
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+The Tririga-Manage-Rest module operates on TRIRIGA using the management REST API.
+
+.. ##BEGIN TABLE TRIRIGA MANAGE REST
 .. csv-table::
     :header-rows: 1
     :stub-columns: 1
@@ -154,17 +418,7 @@ Available Commands
     Stop-TririgaAgent,Stops a TRIRIGA agent
     Get-TririgaAgentHost,Gets the configured host(s) for the given agent
     Get-TririgaBuildNumber,Gets TRIRIGA build number
-    Open-TririgaDatabase,Opens Dbeaver and connects to the TRIRIGA database
-    Get-TririgaEnvironment,Gets all known environments
-    Open-TririgaFolder,Opens a TRIRIGA installation directory path
-    Enter-TririgaHost,Starts a remote powershell session to a TRIRIGA instance
-    Get-TririgaInstance,Gets all known instances in a given environment
-    Get-TririgaLog,Tails a TRIRIGA log file
-    Open-TririgaLog,Opens a TRIRIGA log file
     Write-TririgaLogMessage,Write a message to TRIRIGA Log file
-    Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
-    Import-TririgaOmp,Uploads and imports a local OMP zip file to TRIRIGA
-    Save-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
     Reload-TririgaPlatformLogging,Reload logging categories from disk
     Disable-TririgaPlatformLogging,Disables TRIRIGA platform Logging for the given categories
     Enable-TririgaPlatformLogging,Enables TRIRIGA platform Logging for the given categories
@@ -174,27 +428,16 @@ Available Commands
     Reset-TririgaPlatformLoggingDuplicates,Reset duplicate categories
     Get-TririgaProperty,Lists a settings in a TRIRIGA properties file
     Set-TririgaProperty,Sets settings in a TRIRIGA properties file
-    Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
     Get-TririgaServerInformation,Retrieves information about the TRIRIGA server.
     Get-TririgaServerXml,Get the WebSphere Liberty server.xml file
-    Disable-TririgaService,Disables TRIRIGA service
-    Enable-TririgaService,Enables TRIRIGA service
-    Get-TririgaService,Get the current status of TRIRIGA service
-    Restart-TririgaService,Restarts TRIRIGA service
-    Start-TririgaService,Starts TRIRIGA service
-    Stop-TririgaService,Stops TRIRIGA service
     Get-TririgaSummary,Gets basic information about a TRIRIGA instance
     Lock-TririgaSystem,Locks the TRIRIGA server
     Unlock-TririgaSystem,Unlocks the TRIRIGA server
-    Open-TririgaWasFolder,Opens a WebSphere profile path
-    Get-TririgaWasLog,Tails a WebSphere log file
-    Open-TririgaWasLog,Opens a WebSphere log file
-    Open-TririgaWasWeb,Opens the WebSphere Admin Console
-    Open-TririgaWeb,Opens a TRIRIGA environment
     Disable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ERRORS_ONLY
     Enable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ALWAYS
     Set-TririgaWorkflowInstance,Updates workflow instance recording setting
-.. ##END TABLE
+.. ##END TABLE TRIRIGA MANAGE REST
+
 
 Installation
 ------------
@@ -225,10 +468,14 @@ of the module. Add this to your ``$Profile`` file to force module loading:
 
 From Source
 ~~~~~~~~~~~
-#. Open a PowerShell window in *this* directory.
+#. Download the distibution zip file
+#. Open a PowerShell window in the same directory as the zip file
 #. Run::
 
-        .\Install.ps1
+        Remove-Item tririga-manage-ps1 -Recurse
+        Unblock-File tririga-manage-ps1-4.6.0.zip
+        Expand-Archive tririga-manage-ps1-4.6.0.zip -DestinationPath .
+        .\tririga-manage-ps1\Install.ps1
 
 If you are using PowerShell 5.1, some methods may not trigger automatic loading
 of the module. Add this to your ``$Profile`` file to force module loading:

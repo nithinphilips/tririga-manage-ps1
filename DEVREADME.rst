@@ -72,7 +72,8 @@ We have commands that:
    with same nouns. Eg: ``*-WorkflowInstance``
 
 #. By default operate on the first instance in an environment, but can
-   optionally operate on any specific instance.
+   optionally operate on any specific instance or all instances with the
+   ``-All`` switch (only where it makes sense).
 
    .. code:: ps1
 
@@ -87,6 +88,16 @@ We have commands that:
            # If omitted, command will act on the first instance.
            [Alias("Inst", "I")]
            [string]$instance,
+           # By default only one instance is queried. Set this switch to query all instances.
+           [switch]$all
+
+       ...
+
+       $apiCall = @{
+            ...
+            OnlyOnAnyOneInstance = !$all
+            ...
+       }
 
 Publish
 -------
