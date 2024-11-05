@@ -1,13 +1,14 @@
 Change Log
 ==========
 
-vNEXT
+v4.5.0
 -----
-* Fix bug getting actual objectmigration agent in PS 5.1
+* Fix bug getting actual object migration agent in PS 5.1
+* Improve output of ``Get-TririgaService``. It now has a ``-Raw`` switch.
 * Document workaround for some functions not triggering module autoload in PS 5.1
-* Implement ``Write-LogMessage``, ``Get-PlatformLogging``,
-  ``Enable-PlatformLogging``, ``Disable-PlatformLogging``,
-  ``Reset-PlatformLoggingDuplicates``
+* Implement ``Write-TririgaLogMessage``, ``Get-TririgaPlatformLogging``,
+  ``Enable-TririgaPlatformLogging``, ``Disable-TririgaPlatformLogging``,
+  ``Reset-TririgaPlatformLoggingDuplicates``
 * Fix bug in peristing sessions
 
 v4.4.0
