@@ -46,13 +46,13 @@ TODO
 - [ ] Get-PerformanceValue
 - [ ] Get-CachePerformance
 
-- [X] Write-LogMessage
+- [x] Write-LogMessage
 - [x] Get-PlatformLogging
 - [x] Set-PlatformLogging
 - [x] Enable-PlatformLogging
 - [x] Disable-PlatformLogging
 - [x] Reset-PlatformLoggingDuplicates
-- [ ] Roll-LogCategory
+- [x] Roll-LogCategory
 - 
 
 - [ ] Get-Record
@@ -66,8 +66,8 @@ TODO
 - [ ] Lock-System
 - [ ] Unlock-System
 
-- [ ] Get-Property (-All)
-- [ ] Set-Property
+- [x] Get-Property (-All)
+- [x] Set-Property
 
 - [ ] Get-ServerXml
 

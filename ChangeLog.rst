@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+v NEXT
+------
+* Implement ``Get-TririgaServerInformation``, ``Lock-TririgaSystem``,
+  ``Unlock-TririgaSystem``, ``Get-TririgaProperty``, ``Set-TririgaProperty``
+  and ``Add-TririgaPlatformLoggingCategory``
+
 v4.5.0
 ------
 * Fix bug getting actual object migration agent in PS 5.1

@@ -189,19 +189,15 @@ function CallTririgaApiRaw() {
         [string]$apiMethod = "GET",
         [Parameter(Mandatory)]
         [string]$apiPath,
-        $apiBody,
+        [Parameter(ValueFromPipeline)]
+        [object]$apiBody,
         [Parameter(Mandatory)]
         [string]$username,
         [Parameter(Mandatory)]
         [string]$password,
-
         [boolean]$useProxy = $false,
         [string]$proxyUrl = "http://localhost:8080"
     )
-
-    if ($input) {
-        $apiBody = $input
-    }
 
     if ($useProxy) {
         $proxyProps = @{
@@ -286,12 +282,12 @@ function CallTririgaApiRaw() {
     if ($VerbosePreference) {
         Write-Verbose "Send $apiMethod request to $apiUrl"
         if($apiBody) {
-            Write-Verbose "  with data: $($apiBody | ConvertTo-Json)"
+            Write-Verbose "  with data [$($apiBody.GetType())]: $apiBody"
         }
     }
 
     try {
-        $response = Invoke-RestMethod -Method $apiMethod -WebSession $tririgaSession -ContentType application/json -Uri $apiUrl @proxyProps -Body $apiBody
+        $response = Invoke-RestMethod -Method $apiMethod -WebSession $tririgaSession -ContentType application/json -Uri $apiUrl @proxyProps -Body ($apiBody | ConvertTo-Json)
         return $response
     } catch {
         if ($_.Exception.Response.StatusCode.value__ -eq 401) {
@@ -307,17 +303,14 @@ function CallTririgaApi() {
         [string]$environment,
         [string]$instance = $null,
         [string]$apiMethod = "GET",
-        $apiBody,
         [Parameter(Mandatory)]
         [string]$apiPath,
+        [Parameter(ValueFromPipeline)]
+        [object]$apiBody,
         # When no $instance is set, runs on any one instance
         [switch]$onlyOnAnyOneInstance = $false,
         [switch]$noTag = $false
     )
-
-    if ($input) {
-        $apiBody = $input
-    }
 
     $tririgaEnvironment = (GetConfiguration)[$environment]
 
@@ -359,7 +352,6 @@ function CallTririgaApi() {
             }
 
             $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaEnvironment.username -password $tririgaEnvironment.password
-
 
             # TODO: Only do this of the result is PSObject
             if (!$noTag) {
@@ -416,6 +408,246 @@ function Get-BuildNumber() {
     }
 
     CallTririgaApi @apiCall
+}
+
+<#
+.SYNOPSIS
+Retrieves information about the TRIRIGA server.
+.DESCRIPTION
+Retrieves information about the TRIRIGA server.
+
+Uses the /api/p/v1/server/info method
+#>
+function Get-ServerInformation() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/p/v1/server/info"
+    }
+
+    CallTririgaApi @apiCall
+}
+
+<#
+.SYNOPSIS
+Locks the TRIRIGA server
+.DESCRIPTION
+Locks the TRIRIGA server. No new logins will be possible.
+
+Uses the /api/v1/admin/systemInfo/lockSystem method
+#>
+function Lock-System() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "POST"
+        ApiPath = "/api/v1/admin/systemInfo/lockSystem"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Lock")){
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Unlocks the TRIRIGA server
+.DESCRIPTION
+Unlocks the TRIRIGA server. No new logins will be possible.
+
+Uses the /api/v1/admin/systemInfo/unlockSystem method
+#>
+function Unlock-System() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "POST"
+        ApiPath = "/api/v1/admin/systemInfo/unlockSystem"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Unlock")){
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Lists a settings in a TRIRIGA properties file
+.DESCRIPTION
+Lists a settings in a TRIRIGA properties file
+
+Uses the /api/v1/admin/systemInfo/properties/list method
+#>
+function Get-Property() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # The properties file to load (without the .properties extension)
+        [Parameter()]
+        [string]$file="TRIRIGAWEB",
+        # Name of a single property to set
+        [Parameter(Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [string]$property
+    )
+
+    $fileEscaped = [System.Net.WebUtility]::UrlEncode($file)
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/systemInfo/properties/list?f=$fileEscaped"
+        OnlyOnAnyOneInstance = $true
+    }
+
+    $instanceLabel = "[One]"
+    if($instance) { $instanceLabel = $instance }
+
+    if ($property) {
+        CallTririgaApi @apiCall | Select-Object $property
+    } else {
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Sets settings in a TRIRIGA properties file
+.DESCRIPTION
+Sets settings in a TRIRIGA properties file
+
+Uses the /api/v1/admin/systemInfo/properties/update method
+.EXAMPLE
+PS> Set-TririgaProperty LOCAL SSO Y
+...
+SSO: Y
+...
+PS> @{ "SSO" = "N" } | Set-TririgaProperty LOCAL
+...
+SSO: N
+...
+PS> @{ "SSO" = "N"; "SSO_REMOTE_USER" = "Y" } | Set-TririgaProperty LOCAL -Verbose
+...
+            SSO: N
+SSO_REMOTE_USER: Y
+...
+#>
+function Set-Property() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # The properties file to load (without the .properties extension)
+        [string]$file="TRIRIGAWEB",
+        # Name of a single property to set
+        [Parameter(ParameterSetName='SingleProperty', Position=1)]
+        [ValidateNotNullOrEmpty()]
+        [string]$property,
+        # Value of a single property to set
+        [Parameter(ParameterSetName='SingleProperty', Position=2)]
+        [ValidateNotNullOrEmpty()]
+        [string]$value,
+        # An object with multiple properties
+        [Parameter(ValueFromPipeline, ParameterSetName = 'PropertyObject')]
+        [object]$propertyObject
+    )
+
+    $fileEscaped = [System.Net.WebUtility]::UrlEncode($file)
+
+    if(!$propertyObject) {
+        if(!$property -or !$value) {
+           throw "You must set one of -Property and -Value OR -PropertyObject"
+        }
+
+        $propertyObject = @{
+            "$property" = "$value"
+        }
+
+        #$MyJsonVariable = $MyJsonHashTable | ConvertTo-Json
+        Write-Verbose "Construct propertyObject: $property = $value"
+    }
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "PUT"
+        ApiPath = "/api/v1/admin/systemInfo/properties/update?f=$fileEscaped"
+        ApiBody = $propertyObject
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Set Property")){
+        CallTririgaApi @apiCall
+    }
 }
 
 function ResolveLogCategoryDescriptions() {
@@ -1114,15 +1346,15 @@ function Get-PlatformLogging() {
 
 <#
 .SYNOPSIS
-Sets a logging level for the given TRIRIGA platform Logging categories
+Add a new platform logging category and level
 .DESCRIPTION
-Sets a logging level for the given TRIRIGA platform Logging categories
+Add a new platform logging category and level
 
-WARNING: We have not been able to make this API call work.
+Note: Not sure what this API does.
 
 Uses the /api/v1/admin/platformLogging/debug/manual method
 #>
-function Set-PlatformLogging() {
+function Add-PlatformLoggingCategory() {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
@@ -1140,15 +1372,16 @@ function Set-PlatformLogging() {
         [ValidateNotNullOrEmpty()]
         [string[]]$category,
         # The log level to set for the category
-        [string]$level="TRACE"
+        [string]$level
     )
 
     #TODO: THis has no effect. Not sure what the correct values to pass are
-    $categoryObjects = ResolveLogCategoryDescriptions -Environment $environment -Instance $instance -Category $category
+    #$categoryObjects = ResolveLogCategoryDescriptions -Environment $environment -Instance $instance -Category $category
 
-    foreach($categoryObject in $categoryObjects) {
+    #foreach($categoryObject in $categoryObjects) {
+    foreach($categoryName in $category) {
 
-        $categoryName = $categoryObject.Name.split(".")[-1]
+        #$categoryName = $categoryObject.Name.split(".")[-1]
         $categoryNameEscaped = [System.Net.WebUtility]::UrlEncode($categoryName)
 
         $apiCall  = @{
@@ -1162,7 +1395,8 @@ function Set-PlatformLogging() {
         if($instance) { $instanceLabel = $instance }
 
         if($PSCmdlet.ShouldProcess("$environment.$instanceLabel")) {
-            CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+            #CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+            CallTririgaApi @apiCall
         }
     }
 }
