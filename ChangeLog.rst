@@ -1,7 +1,7 @@
 Change Log
 ==========
 
-v NEXT
+v4.6.0
 ------
 * Implement these new REST API methods
 

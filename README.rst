@@ -169,10 +169,14 @@ Available Commands
     Disable-TririgaPlatformLogging,Disables TRIRIGA platform Logging for the given categories
     Enable-TririgaPlatformLogging,Enables TRIRIGA platform Logging for the given categories
     Get-TririgaPlatformLogging,Gets information about TRIRIGA platform Logging
-    Set-TririgaPlatformLogging,Sets a logging level for the given TRIRIGA platform Logging categories
     Sync-TririgaPlatformLogging,Reload logging categories from disk
+    Add-TririgaPlatformLoggingCategory,Add a new platform logging category and level
     Reset-TririgaPlatformLoggingDuplicates,Reset duplicate categories
+    Get-TririgaProperty,Lists a settings in a TRIRIGA properties file
+    Set-TririgaProperty,Sets settings in a TRIRIGA properties file
     Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
+    Get-TririgaServerInformation,Retrieves information about the TRIRIGA server.
+    Get-TririgaServerXml,Get the WebSphere Liberty server.xml file
     Disable-TririgaService,Disables TRIRIGA service
     Enable-TririgaService,Enables TRIRIGA service
     Get-TririgaService,Get the current status of TRIRIGA service
@@ -180,6 +184,8 @@ Available Commands
     Start-TririgaService,Starts TRIRIGA service
     Stop-TririgaService,Stops TRIRIGA service
     Get-TririgaSummary,Gets basic information about a TRIRIGA instance
+    Lock-TririgaSystem,Locks the TRIRIGA server
+    Unlock-TririgaSystem,Unlocks the TRIRIGA server
     Open-TririgaWasFolder,Opens a WebSphere profile path
     Get-TririgaWasLog,Tails a WebSphere log file
     Open-TririgaWasLog,Opens a WebSphere log file
