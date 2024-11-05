@@ -114,14 +114,11 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = '
--   Fix bug in REST module returning results twice
--   Implement `-WhatIf` flag in any commands that will make a change.
--   Rename commands per PSScriptAnalyer recommendations:
-    -   Get-AdminUsers -\> Get-AdminUser
-    -   Get-ActiveUsers -\> Get-ActiveUser
-    -   Get-Agents -\> Get-Agent
--   Implement unit tests.
--   Changes to production environments is now confirmed with a a Yes/No prompt, not a timer.
+-   Fix bug getting actual object migration agent in PS 5.1
+-   Improve output of `Get-TririgaService`. It now has a `-Raw` switch.
+-   Document workaround for some functions not triggering module autoload in PS 5.1
+-   Implement `Write-TririgaLogMessage`, `Get-TririgaPlatformLogging`, `Enable-TririgaPlatformLogging`, `Disable-TririgaPlatformLogging`, `Reset-TririgaPlatformLoggingDuplicates`
+-   Fix bug in peristing sessions
 '
 
         # Prerelease string of this module
