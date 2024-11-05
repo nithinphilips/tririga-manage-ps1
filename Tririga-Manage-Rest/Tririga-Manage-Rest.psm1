@@ -521,6 +521,69 @@ function Unlock-System() {
 
 <#
 .SYNOPSIS
+Get the WebSphere Liberty server.xml file
+.DESCRIPTION
+Get the WebSphere Liberty server.xml file
+
+Uses the /api/v1/admin/systemInfo/properties/serverXml method
+.EXAMPLE
+PS> Get-TririgaServerXml LOCAL
+<server>
+    ...
+</server>
+PS> (Get-TririgaServerXml LOCAL -Raw).server
+description    : IBM TRIRIGA Application Platform
+#comment       : { Enable features ,  HTTP Session timeout is invalidationTimeout, default of 1800 seconds }
+featureManager : featureManager
+httpEndpoint   : httpEndpoint
+...
+#>
+function Get-ServerXml() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # By default the XML response is printed as text. Set this flag to get a PSObject instead
+        [switch]$raw
+    )
+
+    $fileEscaped = [System.Net.WebUtility]::UrlEncode($file)
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/systemInfo/properties/serverXml"
+        OnlyOnAnyOneInstance = $true
+        NoTag = $true
+    }
+
+    $instanceLabel = "[One]"
+    if($instance) { $instanceLabel = $instance }
+
+    $serverXml = CallTririgaApi @apiCall
+
+    if ($raw) {
+        $serverXml
+    } else {
+        $sw = New-Object System.IO.StringWriter
+        $writer = New-Object System.Xml.XmlTextWriter($sw)
+        $writer.Formatting = [System.Xml.Formatting]::Indented
+        $serverXml.WriteContentTo($writer)
+        $sw.ToString()
+    }
+}
+
+<#
+.SYNOPSIS
 Lists a settings in a TRIRIGA properties file
 .DESCRIPTION
 Lists a settings in a TRIRIGA properties file

@@ -3,9 +3,15 @@ Change Log
 
 v NEXT
 ------
-* Implement ``Get-TririgaServerInformation``, ``Lock-TririgaSystem``,
-  ``Unlock-TririgaSystem``, ``Get-TririgaProperty``, ``Set-TririgaProperty``
-  and ``Add-TririgaPlatformLoggingCategory``
+* Implement these new REST API methods
+
+  * ``Get-TririgaServerInformation``
+  * ``Lock-TririgaSystem``
+  * ``Unlock-TririgaSystem``
+  * ``Get-TririgaProperty``
+  * ``Set-TririgaProperty``
+  * ``Add-TririgaPlatformLoggingCategory``
+  * ``Get-ServerXml``
 
 v4.5.0
 ------

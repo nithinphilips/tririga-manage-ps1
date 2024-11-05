@@ -69,7 +69,7 @@ TODO
 - [x] Get-Property (-All)
 - [x] Set-Property
 
-- [ ] Get-ServerXml
+- [x] Get-ServerXml
 
 - [ ] Get-ThreadManager
 - [ ] Set-ThreadManager

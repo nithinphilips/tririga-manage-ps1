@@ -70,9 +70,9 @@ PowerShellVersion = '5.1'
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
 FunctionsToExport = 'Get-BuildNumber', 'Get-ServerInformation', 'Lock-System', 
-               'Unlock-System', 'Get-Property', 'Set-Property', 'Get-Summary', 
-               'Get-Agent', 'Get-AgentHost', 'Get-AdminUser', 'Get-ActiveUser', 
-               'Stop-Agent', 'Start-Agent', 'Set-WorkflowInstance', 
+               'Unlock-System', 'Get-ServerXml', 'Get-Property', 'Set-Property', 
+               'Get-Summary', 'Get-Agent', 'Get-AgentHost', 'Get-AdminUser', 
+               'Get-ActiveUser', 'Stop-Agent', 'Start-Agent', 'Set-WorkflowInstance', 
                'Enable-WorkflowInstance', 'Disable-WorkflowInstance', 
                'Write-LogMessage', 'Sync-PlatformLogging', 
                'Reset-PlatformLoggingDuplicates', 'Get-PlatformLogging', 
