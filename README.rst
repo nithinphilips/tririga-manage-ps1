@@ -453,6 +453,15 @@ The Tririga-Manage-Rest module operates on TRIRIGA using the management REST API
     Stop-TririgaAgent,Stops a TRIRIGA agent
     Get-TririgaAgentHost,Gets the configured host(s) for the given agent
     Get-TririgaBuildNumber,Gets TRIRIGA build number
+    Clear-TririgaBusinessObject,"Clears Business Object Records, removes stale data (12 hrs and older)"
+    Clear-TririgaCache,Clears a cache
+    Get-TririgaCacheHierarchyTree,Gets the hierarchy tree cache status details
+    Get-TririgaCacheMode,Gets the cache processing mode
+    Set-TririgaCacheMode,Sets the cache processing mode
+    Get-TririgaDatabase,Gets the database environment information
+    Clear-TririgaDatabaseAll,Runs a full database cleanup
+    Get-TririgaDatabaseSpace,Gets the database space information
+    Invoke-TririgaDatabaseTask,Invokes a database task
     Write-TririgaLogMessage,Write a message to TRIRIGA Log file
     Reload-TririgaPlatformLogging,Reload logging categories from disk
     Disable-TririgaPlatformLogging,Disables TRIRIGA platform Logging for the given categories
@@ -461,13 +470,15 @@ The Tririga-Manage-Rest module operates on TRIRIGA using the management REST API
     Sync-TririgaPlatformLogging,Reload logging categories from disk
     Add-TririgaPlatformLoggingCategory,Add a new platform logging category and level
     Reset-TririgaPlatformLoggingDuplicates,Reset duplicate categories
-    Get-TririgaProperty,Lists a settings in a TRIRIGA properties file
+    Get-TririgaProperty,Gets a setting in a TRIRIGA properties file
     Set-TririgaProperty,Sets settings in a TRIRIGA properties file
+    Clear-TririgaScheduledEvent,Clears Scheduled Events
     Get-TririgaServerInformation,Retrieves information about the TRIRIGA server.
     Get-TririgaServerXml,Get the WebSphere Liberty server.xml file
     Get-TririgaSummary,Gets basic information about a TRIRIGA instance
     Lock-TririgaSystem,Locks the TRIRIGA server
     Unlock-TririgaSystem,Unlocks the TRIRIGA server
+    Clear-TririgaWorkflowInstance,Clears Workflow Instance data
     Disable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ERRORS_ONLY
     Enable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ALWAYS
     Set-TririgaWorkflowInstance,Updates workflow instance recording setting

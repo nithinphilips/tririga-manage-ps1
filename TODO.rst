@@ -1,15 +1,18 @@
 TODO
 ====
+http://localhost:9080/api/doc/p/bos
 
 - [ ] Get-BusinessObject [name,moduleid]
 - [ ] Get-BusinessObject [id]
 - [ ] Get-BusinessObjectField [name]
 - [ ] Get-BusinessObjectField [id]
 
-- [ ] Get-HierarchyTreeCache
-- [ ] Get-CacheProcessingMode
-- [ ] Set-CacheProcessingMode [*mode*]
-- [ ] Invoke-FlushCache [*cache*]
+http://localhost:9080/api/doc/p/cache
+
+- [*] Get-HierarchyTreeCache
+- [*] Get-CacheProcessingMode
+- [*] Set-CacheProcessingMode [*mode*]
+- [*] Invoke-FlushCache [*cache*]
 
 - [ ] Get-CleanupStatus
 
@@ -20,8 +23,10 @@ TODO
 - [ ] Get-DataConnectJob [*ID*]
 - [ ] Get-DataConnectStagingTable [*-Details*]
 
-- [ ] Get-DatabaseInfo
-- [ ] Invoke-CleanupWorkflow  POST /api/v1/admin/databaseinfo/task?action=cleanupwf
+http://localhost:9080/api/doc/p/dataBaseInfo
+
+- [x] Get-DatabaseInfo
+- [x] Invoke-CleanupWorkflow  POST /api/v1/admin/databaseinfo/task?action=cleanupwf
 - [ ] Invoke-DatabaseQuery (Pipe SQL in)
 
 - [ ] Get-LogLast

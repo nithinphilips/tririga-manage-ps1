@@ -66,7 +66,7 @@ environments.sample.psd1.tmp: environments.sample.psd1
 update-module: ChangeLog.$(GIT_TAG).md
 	pwsh Install.ps1 -UpdateModule -NoInstallModule -ReleaseNoteFile $<
 
-update-readme: Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp environments.sample.psd1.tmp
+update-readme: update-module Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp environments.sample.psd1.tmp
 	# Delete everything between these lines
 	sed -i -e '/BEGIN TABLE TRIRIGA MANAGE/,/END TABLE TRIRIGA MANAGE/{//!d}' README.rst
 	sed -i -e '/BEGIN TABLE TRIRIGA MANAGE/ r Tririga-Manage.rst.tmp' README.rst

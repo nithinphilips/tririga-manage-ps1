@@ -6,6 +6,19 @@ v NEXT
 * Support piping output of ``Get-TririgaProperty`` into ``Set-TririgaProperty``
 * Add ``-All`` switch to ``Get-TririgaSummary`` and ``Get-TririgaServerXml`` to
   optionally run against all instances.
+* Implement these new REST API methods
+
+  * ``Get-CacheHierarchyTree``
+  * ``Get-CacheMode``
+  * ``Set-CacheMode``
+  * ``Clear-Cache``
+  * ``Get-Database``
+  * ``Get-DatabaseSpace``
+  * ``Invoke-DatabaseTask``
+  * ``Clear-WorkflowInstance``
+  * ``Clear-BusinessObject``
+  * ``Clear-ScheduledEvent``
+  * ``Clear-DatabaseAll``
 
 v4.6.0
 ------

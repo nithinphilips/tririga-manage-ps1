@@ -646,7 +646,7 @@ Tails a TRIRIGA log file
 Tails a TRIRIGA log file in the console
 #>
 function Get-Log() {
-    [Alias("Tail-Log")]
+    [Alias("Tail-Log", "Watch-Log")]
     [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.

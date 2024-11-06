@@ -1720,4 +1720,389 @@ function Disable-PlatformLogging() {
     }
 }
 
+<#
+.SYNOPSIS
+Gets the hierarchy tree cache status details
+.DESCRIPTION
+Gets the hierarchy tree cache status details
 
+Uses the /api/v1/admin/cache/hierarchyTree method
+#>
+function Get-CacheHierarchyTree() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/cache/hierarchyTree"
+    }
+
+    CallTririgaApi @apiCall
+}
+
+<#
+.SYNOPSIS
+Gets the cache processing mode
+.DESCRIPTION
+Gets the cache processing mode
+
+Uses the /api/v1/admin/cache/mode/status method
+#>
+function Get-CacheMode() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/cache/mode/status"
+    }
+
+    CallTririgaApi @apiCall
+}
+
+<#
+.SYNOPSIS
+Sets the cache processing mode
+.DESCRIPTION
+Sets the cache processing mode
+
+Uses the /api/v1/admin/cache/mode method
+#>
+function Set-CacheMode() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # The cache processing mode to set
+        [Parameter(Mandatory, Position=1)]
+        [string]$mode
+    )
+
+    $modeEscaped = [System.Net.WebUtility]::UrlEncode($mode)
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "POST"
+        ApiPath = "/api/v1/admin/cache/mode?mode=$modeEscaped"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Set Cache Mode/$mode")){
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Clears a cache
+.DESCRIPTION
+Clears a cache. Clears all caches by default.
+
+Uses the /api/v1/admin/cache/mode method
+#>
+function Clear-Cache() {
+    [Alias("Flush-Cache")]
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # The cache to clear
+        [Parameter(Position=1)]
+        [string]$cache="ALLCACHESGLOBAL"
+    )
+
+    $cacheEscaped = [System.Net.WebUtility]::UrlEncode($cache)
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "POST"
+        ApiPath = "/api/v1/admin/cache/refresh?cache=$cacheEscaped"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Clear Cache/$cache")){
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Gets the database environment information
+.DESCRIPTION
+Gets the database environment information
+
+Uses the /api/v1/admin/databaseinfo method
+#>
+function Get-Database() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/databaseinfo"
+    }
+
+    CallTririgaApi @apiCall
+}
+
+<#
+.SYNOPSIS
+Gets the database space information
+.DESCRIPTION
+Gets the database space information
+
+Uses the /api/v1/admin/databaseinfo/space method
+#>
+function Get-DatabaseSpace() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "GET"
+        ApiPath = "/api/v1/admin/databaseinfo/space"
+    }
+
+    CallTririgaApi @apiCall
+}
+
+
+<#
+.SYNOPSIS
+Invokes a database task
+.DESCRIPTION
+Invokes a database task
+
+Uses the /api/v1/admin/databaseinfo/task method
+#>
+function Invoke-DatabaseTask() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # The cache to clear
+        [Parameter(Mandatory,Position=1)]
+        [string]$action
+    )
+
+    $actionEscaped = [System.Net.WebUtility]::UrlEncode($action)
+
+    $apiCall = @{
+        Environment = $environment
+        Instance = $instance
+        ApiMethod = "POST"
+        ApiPath = "/api/v1/admin/databaseinfo/task?action=$actionEscaped"
+    }
+
+    $instanceLabel = "[All]"
+    if($instance) { $instanceLabel = $instance }
+
+    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "DatabaseTask/$action")){
+        CallTririgaApi @apiCall
+    }
+}
+
+<#
+.SYNOPSIS
+Clears Workflow Instance data
+.DESCRIPTION
+Clears Workflow Instance data
+
+Uses the /api/v1/admin/databaseinfo/task method
+#>
+function Clear-WorkflowInstance() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance,
+        # Perform a truncate of workflow instances. This removes any workflows not running or waiting for user
+        [switch]$truncate,
+        # Do not ask for confirmation when truncating
+        [switch]$force
+    )
+
+    $action = "cleanupwf"
+
+    if ($truncate) {
+        $action = "clearwfinstances"
+
+        Write-Warning "This process will take awhile and MUST be done on very quiet system."
+        Write-Warning "It is important to disable all workflow agents running against the database, and it is recommended you use the TRIRIGA System Lock to prevent people from logging in while the process executes."
+        Write-Warning "Backup your database before executing this action, as it will permanently delete the data in these tables and if an error is occurs, the only recovery option is to restore from backup."
+        Write-Warning "Review the server.log to ensure the command completes successfully before unsetting the System Lock and restarting the Workflow Agents."
+        if ($force -or $PSCmdlet.ShouldContinue("Truncating workflows is a potentially destructive action. This MUST only be done in a quiet system as there is a chance for data loss if a deadlock occurs.", "Would you like to continue?") ) {
+            Write-Warning "Performing workflow truncation"
+        } else {
+            return
+        }
+    }
+
+    Invoke-DatabaseTask -Environment $environment -Instance $instance -Action $action
+}
+
+<#
+.SYNOPSIS
+Clears Business Object Records, removes stale data (12 hrs and older)
+.DESCRIPTION
+Clears Business Object Records, removes stale data (12 hrs and older)
+
+Uses the /api/v1/admin/databaseinfo/task method
+#>
+function Clear-BusinessObject() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    Invoke-DatabaseTask -Environment $environment -Instance $instance -Action "cleanupbo"
+}
+
+<#
+.SYNOPSIS
+Clears Scheduled Events
+.DESCRIPTION
+Clears Scheduled Events
+
+Uses the /api/v1/admin/databaseinfo/task method
+#>
+function Clear-ScheduledEvent() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    Invoke-DatabaseTask -Environment $environment -Instance $instance -Action "cleanupschedule"
+}
+
+<#
+.SYNOPSIS
+Runs a full database cleanup
+.DESCRIPTION
+Runs a full database cleanup
+
+Uses the /api/v1/admin/databaseinfo/task method
+#>
+function Clear-DatabaseAll() {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter()]
+        [string]$instance
+    )
+
+    Invoke-DatabaseTask -Environment $environment -Instance $instance -Action "allcleanup"
+}
