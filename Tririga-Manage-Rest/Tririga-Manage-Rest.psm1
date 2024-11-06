@@ -293,6 +293,7 @@ function CallTririgaApiRaw() {
         if ($_.Exception.Response.StatusCode.value__ -eq 401) {
             Write-Error "Got HTTP 401 (unauthorized) error. Your session for $serverUrlBase may have expired. It has been reset. Please Try again."
             $tririgaSessionTable[$serverUrlBase] = $null
+            $tririgaSession = $null
         }
     }
 }
@@ -609,7 +610,6 @@ USE_AUTO_COMPLETE_IN_SMART_SECTION : Y
 file                               : TRIRIGAWEB
 environment                        : LOCAL
 instance                           : ONE
-
 ...
 
 .EXAMPLE
@@ -715,6 +715,9 @@ A PSCustomObject with changed properties
 
 The object will also have these 3 properties: environment, instance, file.
 
+NOTE: In some platform versions, the output may not reflect the change you made
+      until you restart the service.
+
 .EXAMPLE
 PS> Set-TririgaProperty LOCAL SSO N
 environment instance file       SSO
@@ -729,14 +732,12 @@ file            : TRIRIGAWEB
 SSO             : N
 
 .EXAMPLE
-
 PS> @{ "SSO" = "N"; "SSO_REMOTE_USER" = "Y" } | Set-TririgaProperty LOCAL
 environment     : LOCAL
 instance        : ONE
 file            : TRIRIGAWEB
 SSO_REMOTE_USER : Y
 SSO             : N
-
 
 .EXAMPLE
 PS> Get-TririgaProperty LOCAL FRONT_END_SERVER, SSO | %  { $_.FRONT_END_SERVER = $_.FRONT_END_SERVER.replace("http", "https"); $_ } | Set-TririgaProperty

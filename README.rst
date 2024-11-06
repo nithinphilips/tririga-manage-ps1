@@ -2,23 +2,58 @@ PowerShell Scripts to Manage TRIRIGA Environments
 =================================================
 PowerShell commands to manage TRIRIGA instances.
 
-There are command to manage installations on Windows Servers and some aspects
-using the TRIRIGA REST management API.
+This project provides two modules:
+
+* `Tririga-Manage`_: Commands to manage TRIRIGA installations on Windows
+* `Tririga-Manage-Rest`_: Commands to manage TRIRIGA instances over the admin REST API
+
+You can install each independently.
+
+If ``Tririga-Manage-Rest`` is installed, the ``Upload-TririgaOmp`` and
+``Import-TririgaOmp`` can use it to find the actual server running the
+ObjectMigration agent.
+
+.. _Tririga-Manage: https://www.powershellgallery.com/packages/Tririga-Manage
+.. _Tririga-Manage-Rest: https://www.powershellgallery.com/packages/Tririga-Manage-Rest
 
 Features
 --------
-* Simple way to refer to instances
-* Where applicable, commands can operate on all instances in an environment at
-  once
+* Simple way to refer to environments and instances
+* Operate on all instances in an evironment with a single command.
 * Confirmation when working on production instances
-* The outputs are PowerShell objects and allows the commands to be composable.
+* The outputs are PowerShell objects and the commands can be composed for
+  advanced functionality.
+
+**Tririga-Manage**
+
+* Control TRIRIGA service remotely (``Start``, ``Stop``, ``Enable``,
+  ``Disable``)
+* ``Upload`` or ``Import`` ObjectMigration packages
+* Tail or open TRIRIGA logs
+* Tail or open WebSphere logs
+* Open TRIRIGA installation folder
+* Open WebSphere installation folder
+* Launch database tool and connect to the environment
+* Launch RDP to each instance
+* Open PowerShell remote shell to each instance
+
+**Tririga-Manage-Rest**
+
+* Get list of Active Users
+* Get list of Users with access to admin console
+* Get Build Number, System Info and Summary Info
+* Start or Stop Agents
+* Enable or disable logging
+* Get or set properties in TRIRIGAWEB.properties and other .properties files.
+* Lock and Unlock TRIRIGA.
+* Enable or Disable workflow instance recording.
 
 Requirements
 ------------
 * Windows Powershell 5.x or PowerShell 7.x
-* TRIRIGA servers must be running Windows to use the ``Tririga-Manage`` module
-* Your local Windows account must have access to the Windows server running
-  TRIRIGA
+* For ``Tririga-Manage``: TRIRIGA servers must be running Windows
+* For ``Tririga-Manage``: Your local Windows account must have access to the
+  Windows server running TRIRIGA
 
 Commands
 --------
@@ -468,11 +503,11 @@ of the module. Add this to your ``$Profile`` file to force module loading:
 
 From Source
 ~~~~~~~~~~~
-#. Download the distibution zip file
+#. Download the distibution zip file from the `releases page
+   <https://github.com/nithinphilips/tririga-manage-ps1/releases/latest>`_.
 #. Open a PowerShell window in the same directory as the zip file
 #. Run::
 
-        Remove-Item tririga-manage-ps1 -Recurse
         Unblock-File tririga-manage-ps1-4.6.0.zip
         Expand-Archive tririga-manage-ps1-4.6.0.zip -DestinationPath .
         .\tririga-manage-ps1\Install.ps1
