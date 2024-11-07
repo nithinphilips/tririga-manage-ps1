@@ -12,7 +12,7 @@
 RootModule = 'Tririga-Manage-Rest.psm1'
 
 # Version number of this module.
-ModuleVersion = '4.6.0'
+ModuleVersion = '4.7.0'
 
 # Supported PSEditions
 CompatiblePSEditions = 'Core', 'Desktop'
@@ -119,14 +119,21 @@ PrivateData = @{
 
         # ReleaseNotes of this module
         ReleaseNotes = '
+-   Support piping output of `Get-TririgaProperty` into `Set-TririgaProperty`
+-   Add `-All` switch to `Get-TririgaSummary` and `Get-TririgaServerXml` to optionally run against all instances.
 -   Implement these new REST API methods
-    -   `Get-TririgaServerInformation`
-    -   `Lock-TririgaSystem`
-    -   `Unlock-TririgaSystem`
-    -   `Get-TririgaProperty`
-    -   `Set-TririgaProperty`
-    -   `Add-TririgaPlatformLoggingCategory`
-    -   `Get-TririgaServerXml`
+    -   `Get-CacheHierarchyTree`
+    -   `Get-CacheMode`
+    -   `Set-CacheMode`
+    -   `Clear-Cache`
+    -   `Get-Database`
+    -   `Get-DatabaseSpace`
+    -   `Invoke-DatabaseTask`
+    -   `Clear-WorkflowInstance`
+    -   `Clear-BusinessObject`
+    -   `Clear-ScheduledEvent`
+    -   `Clear-DatabaseAll`
+-   When running with `-WhatIf` or `-Confirm`, confirmation is now done for each instance.
 '
 
         # Prerelease string of this module

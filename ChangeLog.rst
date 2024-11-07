@@ -1,7 +1,7 @@
 Change Log
 ==========
 
-v NEXT
+v4.7.0
 ------
 * Support piping output of ``Get-TririgaProperty`` into ``Set-TririgaProperty``
 * Add ``-All`` switch to ``Get-TririgaSummary`` and ``Get-TririgaServerXml`` to
