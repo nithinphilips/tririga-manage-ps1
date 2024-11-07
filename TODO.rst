@@ -55,7 +55,7 @@ http://localhost:9080/api/doc/p/lockedUsers
 
 .. code:: ps1
 
-    Get-LockedUsers | Unlock-LockedUsers
+    Get-LockedUser | Unlock-LockedUser
 
 - [ ] Get-LockedUsers
 - [ ] Unlock-LockedUsers

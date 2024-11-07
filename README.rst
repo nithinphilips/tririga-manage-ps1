@@ -1,11 +1,11 @@
-PowerShell Scripts to Manage TRIRIGA Environments
-=================================================
+PowerShell Commands to Manage TRIRIGA
+=====================================
 PowerShell commands to manage TRIRIGA instances.
 
 This project provides two modules:
 
 * `Tririga-Manage`_: Commands to manage TRIRIGA installations on Windows
-* `Tririga-Manage-Rest`_: Commands to manage TRIRIGA instances over the admin REST API
+* `Tririga-Manage-Rest`_: Commands to manage TRIRIGA instances using the admin REST API
 
 You can install each independently.
 

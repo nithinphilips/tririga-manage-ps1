@@ -10,6 +10,9 @@ $script:ModuleVersion = (Import-PowerShellDataFile -Path "$($script:ModuleRoot)\
 # If the module is not preset, $RestPrefix will be null
 $RestPrefix = (Get-Module Tririga-Manage-Rest).Prefix
 
+# Hard-coded fallback for PS 5.1 in some scenarios
+if (!$RestPrefix) { $RestPrefix = "Tririga" }
+
 #Import-Module Tririga-Manage-Rest -Prefix "" -ErrorAction 'SilentlyContinue'
 
 #$DBeaverBin="C:\Users\Nithin\AppData\Local\DBeaver\dbeaver.exe"
@@ -201,7 +204,7 @@ function HandleOmp() {
     }
 
     if($tailLog) {
-        Get-Log -environment $instance["Environment"] -instance $instance["Instance"] -log "omp"
+        Get-Log -environment $instance["Environment"] -instance $instance["Instance"] -log "omp" -Tail 1
     }
 }
 
