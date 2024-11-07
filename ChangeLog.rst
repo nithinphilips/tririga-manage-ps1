@@ -20,6 +20,9 @@ v NEXT
   * ``Clear-ScheduledEvent``
   * ``Clear-DatabaseAll``
 
+* When running with ``-WhatIf`` or ``-Confirm``, confirmation is now done for
+  each instance.
+
 v4.6.0
 ------
 * Implement these new REST API methods

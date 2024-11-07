@@ -310,7 +310,10 @@ function CallTririgaApi() {
         [object]$apiBody,
         # When no $instance is set, runs on any one instance
         [switch]$onlyOnAnyOneInstance = $false,
-        [switch]$noTag = $false
+        [switch]$noTag = $false,
+        [string]$operationLabel,
+        [string]$targetLabel,
+        [switch]$doNotConfirm
     )
 
     $tririgaEnvironment = (GetConfiguration)[$environment]
@@ -321,37 +324,42 @@ function CallTririgaApi() {
         return $null
     }
 
-    if ($tririgaEnvironment) {
-        ForEach($inst in $tririgaEnvironment.Servers.keys) {
-            Write-Verbose "CallTririgaApiRaw: On $environment.$inst."
+    #if (!$operationLabel) { $operationLabel = $apiPath }
 
-            # If $instance is set, run only on the given instance
-            if($instance -and !($instance -eq $inst)) {
-                Write-Verbose "Wanted: $instance, Got: $inst. Skip to next"
-                continue
-            }
+    ForEach($inst in $tririgaEnvironment.Servers.keys) {
+        Write-Verbose "CallTririgaApiRaw: On $environment.$inst."
 
-            $tririgaInstance = $tririgaEnvironment["Servers"][$inst]
-            $hostUrl = $tririgaInstance["ApiUrl"]
-            if (!$hostUrl){
-                $hostUrl = $tririgaInstance["Url"]
-            }
+        # If $instance is set, run only on the given instance
+        if($instance -and !($instance -eq $inst)) {
+            Write-Verbose "Wanted: $instance, Got: $inst. Skip to next"
+            continue
+        }
 
-            if (!$hostUrl) {
-                Write-Error "Neither 'ApiUrl' nor 'Url' not set correctly for $environment.$inst"
-                return $null
-            }
+        $tririgaInstance = $tririgaEnvironment["Servers"][$inst]
+        $hostUrl = $tririgaInstance["ApiUrl"]
+        if (!$hostUrl){
+            $hostUrl = $tririgaInstance["Url"]
+        }
 
-            if (!$tririgaEnvironment.username) {
-                Write-Error "Username property is not set for $environment environment"
-                return $null
-            }
+        if (!$hostUrl) {
+            Write-Error "Neither 'ApiUrl' nor 'Url' not set correctly for $environment.$inst"
+            return $null
+        }
 
-            if (!$tririgaEnvironment.password) {
-                Write-Error "Password property is not set for $environment environment"
-                return $null
-            }
+        if (!$tririgaEnvironment.username) {
+            Write-Error "Username property is not set for $environment environment"
+            return $null
+        }
 
+        if (!$tririgaEnvironment.password) {
+            Write-Error "Password property is not set for $environment environment"
+            return $null
+        }
+
+        $targetLabelInst = "$environment/$inst"
+        if ($targetLabel) { $targetLabelInst = "$environment/$inst/$targetLabel" }
+
+        if($doNotConfirm -or $PSCmdlet.ShouldProcess($targetLabelInst, $operationLabel)){
             $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaEnvironment.username -password $tririgaEnvironment.password
 
             # TODO: Only do this of the result is PSObject
@@ -361,14 +369,12 @@ function CallTririgaApi() {
 
             # Yield Result
             $result
-
-            if (!$instance -and $onlyOnAnyOneInstance) {
-                Write-Verbose "OnlyAnyOneInstance is set. Stop after the first one."
-                break
-            }
         }
-    } else {
-        return $null
+
+        if (!$instance -and $onlyOnAnyOneInstance) {
+            Write-Verbose "OnlyAnyOneInstance is set. Stop after the first one."
+            break
+        }
     }
 }
 
@@ -472,14 +478,10 @@ function Lock-System() {
         Instance = $instance
         ApiMethod = "POST"
         ApiPath = "/api/v1/admin/systemInfo/lockSystem"
+        OperationLabel = "Lock"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Lock")){
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -510,14 +512,10 @@ function Unlock-System() {
         Instance = $instance
         ApiMethod = "POST"
         ApiPath = "/api/v1/admin/systemInfo/unlockSystem"
+        OperationLabel = "Unlock"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Unlock")){
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -686,9 +684,6 @@ function Get-Property() {
         ApiPath = "/api/v1/admin/systemInfo/properties/list?f=$fileEscaped"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
     $result = CallTririgaApi @apiCall | Add-Member -PassThru "file" $file
 
     if ($property) {
@@ -811,17 +806,6 @@ function Set-Property() {
             Write-Verbose "Remove environment, instance, file from propertyObject"
         }
 
-        $apiCall = @{
-            Environment = $environment
-            Instance = $instance
-            ApiMethod = "PUT"
-            ApiPath = "/api/v1/admin/systemInfo/properties/update?f=$fileEscaped"
-            ApiBody = $propertyObject
-        }
-
-        $instanceLabel = "[All]"
-        if($instance) { $instanceLabel = $instance }
-
         $properties = @()
         if($propertyObject -is [PSObject]) {
             $properties = $propertyObject.PSObject.Properties | ForEach-Object { $_.Name }
@@ -832,9 +816,16 @@ function Set-Property() {
 
         Write-Verbose "Using filter: $propertyFilter"
 
-        if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Set Property [$properties]")){
-            CallTririgaApi @apiCall | Add-Member -PassThru "file" $file | Select-Object $propertyFilter
+        $apiCall = @{
+            Environment = $environment
+            Instance = $instance
+            ApiMethod = "PUT"
+            ApiPath = "/api/v1/admin/systemInfo/properties/update?f=$fileEscaped"
+            ApiBody = $propertyObject
+            OperationLabel = "Set Property [$properties]"
         }
+
+        CallTririgaApi @apiCall | Add-Member -PassThru "file" $file | Select-Object $propertyFilter
     }
 }
 
@@ -853,6 +844,7 @@ function ResolveLogCategoryDescriptions() {
         ApiMethod = "GET"
         ApiPath = "/api/v1/admin/platformLogging/list"
         OnlyOnAnyOneInstance = $true
+        DoNotConfirm = $true
     }
 
     $loggingCategories = CallTririgaApi @lookupApiCall
@@ -1168,6 +1160,7 @@ function Stop-Agent() {
         ApiPath = "/api/v1/admin/agent/status?agent=$agent"
         OnlyOnAnyOneInstance = $true
         NoTag = $true
+        DoNotConfirm = $true
     }
 
     # TODO: Avoid conversion. ConvertPSObjectToHashtable could infinite loop.
@@ -1185,24 +1178,24 @@ function Stop-Agent() {
             $agentHost = "localhost"
         }
 
-        if($PSCmdlet.ShouldProcess("$($thisAgent.agent) [$agent] on $agentHost", "Stop")){
-            $stopApiCall = @{
-                Environment = $environment
-                Instance = $instance
-                ApiMethod = "POST"
-                ApiPath = "/api/v1/admin/agent/stop?agent=$agent&startOnHost=$agentHost&runningOnHost=$agentHost&startupId=$agentId"
-                OnlyOnAnyOneInstance = $true
-            }
-
-            $result = CallTririgaApi @stopApiCall
-
-            # Some values are in single-item arrays. Flatten it and replace the values
-            $result `
-            | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
-            | Add-Member -PassThru "agentname" $agent -Force `
-            | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
-            | Add-Member -PassThru "status" ($result.status -Join ",") -Force
+        $stopApiCall = @{
+            Environment = $environment
+            Instance = $instance
+            ApiMethod = "POST"
+            ApiPath = "/api/v1/admin/agent/stop?agent=$agent&startOnHost=$agentHost&runningOnHost=$agentHost&startupId=$agentId"
+            OnlyOnAnyOneInstance = $true
+            OperationLabel = "Stop Agent"
+            TargetLabel = "$($thisAgent.agent) [$agent] on $agentHost"
         }
+
+        $result = CallTririgaApi @stopApiCall
+
+        # Some values are in single-item arrays. Flatten it and replace the values
+        $result `
+        | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
+        | Add-Member -PassThru "agentname" $agent -Force `
+        | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
+        | Add-Member -PassThru "status" ($result.status -Join ",") -Force
 
 
     }
@@ -1240,6 +1233,7 @@ function Start-Agent() {
         ApiPath = "/api/v1/admin/agent/status?agent=$agent"
         OnlyOnAnyOneInstance = $true
         NoTag = $true
+        DoNotConfirm = $true
     }
 
     $agentInfo = CallTririgaApi @statusApiCall | ConvertPSObjectToHashtable
@@ -1254,24 +1248,24 @@ function Start-Agent() {
             $agentHost = "localhost"
         }
 
-        if($PSCmdlet.ShouldProcess("$($thisAgent.agent) [$agent] on $agentHost", "Start")){
-            $startApiCall = @{
-                Environment = $environment
-                Instance = $instance
-                ApiMethod = "POST"
-                ApiPath = "/api/v1/admin/agent/start?agent=$agent&hostname=$agentHost&startupId=$agentId"
-                OnlyOnAnyOneInstance = $true
-            }
-
-            $result = CallTririgaApi @startApiCall
-
-            # Some values are in single-item arrays. Flatten it and replace the values
-            $result `
-            | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
-            | Add-Member -PassThru "agentname" $agent -Force `
-            | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
-            | Add-Member -PassThru "status" ($result.status -Join ",") -Force
+        $startApiCall = @{
+            Environment = $environment
+            Instance = $instance
+            ApiMethod = "POST"
+            ApiPath = "/api/v1/admin/agent/start?agent=$agent&hostname=$agentHost&startupId=$agentId"
+            OnlyOnAnyOneInstance = $true
+            OperationLabel = "Start Agent"
+            TargetLabel = "$($thisAgent.agent) [$agent] on $agentHost"
         }
+
+        $result = CallTririgaApi @startApiCall
+
+        # Some values are in single-item arrays. Flatten it and replace the values
+        $result `
+        | Add-Member -PassThru "agent" ($result.agent -Join ",") -Force `
+        | Add-Member -PassThru "agentname" $agent -Force `
+        | Add-Member -PassThru "hostname" ($result.hostname -Join ",") -Force `
+        | Add-Member -PassThru "status" ($result.status -Join ",") -Force
 
     }
 }
@@ -1309,14 +1303,10 @@ function Set-WorkflowInstance() {
         Instance = $instance
         ApiMethod = "POST"
         ApiPath = "/api/v1/admin/workflowAgentInfo/workflowInstance/update?instanceName=$value"
+        OperationLabel = "Set WorkflowInstance=$value"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment.$instanceLabel")){
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -1328,7 +1318,7 @@ Sets the workflow instance recording setting to ALWAYS
 Uses the /api/v1/admin/workflowAgentInfo/workflowInstance/update method
 #>
 function Enable-WorkflowInstance() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -1354,7 +1344,7 @@ Sets the workflow instance recording setting to ERRORS_ONLY
 Uses the /api/v1/admin/workflowAgentInfo/workflowInstance/update method
 #>
 function Disable-WorkflowInstance() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -1404,14 +1394,10 @@ function Write-LogMessage() {
         Instance = $instance
         ApiMethod = "POST"
         ApiPath = "/api/v1/admin/platformLogging/write?message=$messageEscaped"
+        OperationLabel = "Write To Log"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment.$instanceLabel", "Write To Log")) {
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -1424,7 +1410,7 @@ Uses the /api/v1/admin/platformLogging/reload method
 #>
 function Sync-PlatformLogging() {
     [Alias("Reload-PlatformLogging")]
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -1443,14 +1429,10 @@ function Sync-PlatformLogging() {
         Instance = $instance
         ApiMethod = "GET"
         ApiPath = "/api/v1/admin/platformLogging/reload"
+        OperationLabel = "Sync Log Categories"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Sync Log Categories")) {
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -1462,7 +1444,7 @@ Reset duplicate categories
 Uses the /api/v1/admin/platformLogging/resetDuplicates method
 #>
 function Reset-PlatformLoggingDuplicates() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -1481,14 +1463,10 @@ function Reset-PlatformLoggingDuplicates() {
         Instance = $instance
         ApiMethod = "GET"
         ApiPath = "/api/v1/admin/platformLogging/resetDuplicates"
+        OperationLabel = "Reset Log Duplicates"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Reset Log Duplicates")) {
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -1523,10 +1501,8 @@ function Get-PlatformLogging() {
         Instance = $instance
         ApiMethod = "GET"
         ApiPath = "/api/v1/admin/platformLogging/list"
+        DoNotConfirm = $true
     }
-
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
 
     if ($enabled) {
         CallTririgaApi @apiCall | Where-Object -Property checkedStatus -eq "CHECKED" | Where-Object -Property level -le $level
@@ -1580,15 +1556,11 @@ function Add-PlatformLoggingCategory() {
             Instance = $instance
             ApiMethod = "POST"
             ApiPath = "/api/v1/admin/platformLogging/debug/manual?categoryPackage=$categoryNameEscaped&level=$level"
+            OperationLabel = "Add Platform Logging Category"
         }
 
-        $instanceLabel = "[All]"
-        if($instance) { $instanceLabel = $instance }
-
-        if($PSCmdlet.ShouldProcess("$environment.$instanceLabel")) {
-            #CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
-            CallTririgaApi @apiCall
-        }
+        #CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+        CallTririgaApi @apiCall
     }
 }
 
@@ -1641,14 +1613,10 @@ function Enable-PlatformLogging() {
             Instance = $instance
             ApiMethod = "POST"
             ApiPath = "/api/v1/admin/platformLogging/enable?category=$categoryNameEscaped"
+            OperationLabel = "Enable Logging"
         }
 
-        $instanceLabel = "[All]"
-        if($instance) { $instanceLabel = $instance }
-
-        if($PSCmdlet.ShouldProcess("$environment.$instanceLabel/$($categoryObject.Description)", "Enable Logging")) {
-            CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
-        }
+        CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
     }
 }
 
@@ -1709,14 +1677,11 @@ function Disable-PlatformLogging() {
             Instance = $instance
             ApiMethod = "POST"
             ApiPath = "/api/v1/admin/platformLogging/disable?category=$categoryNameEscaped"
+            OperationLabel = "Disable Logging"
+            TargetLabel = $categoryObject.Description
         }
 
-        $instanceLabel = "[All]"
-        if($instance) { $instanceLabel = $instance }
-
-        if($PSCmdlet.ShouldProcess("$environment/$instanceLabel/$($categoryObject.Description)", "Disable Logging")) {
-            CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
-        }
+        CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
     }
 }
 
@@ -1795,7 +1760,7 @@ Sets the cache processing mode
 Uses the /api/v1/admin/cache/mode method
 #>
 function Set-CacheMode() {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         # The TRIRIGA environment to use.
         [Parameter(Mandatory, Position=0)]
@@ -1819,14 +1784,10 @@ function Set-CacheMode() {
         Instance = $instance
         ApiMethod = "POST"
         ApiPath = "/api/v1/admin/cache/mode?mode=$modeEscaped"
+        OperationLabel = "Set Cache Mode = $mode"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Set Cache Mode/$mode")){
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -1863,14 +1824,10 @@ function Clear-Cache() {
         Instance = $instance
         ApiMethod = "POST"
         ApiPath = "/api/v1/admin/cache/refresh?cache=$cacheEscaped"
+        OperationLabel = "Clear $cache Cache"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "Clear Cache/$cache")){
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
@@ -1973,14 +1930,10 @@ function Invoke-DatabaseTask() {
         Instance = $instance
         ApiMethod = "POST"
         ApiPath = "/api/v1/admin/databaseinfo/task?action=$actionEscaped"
+        OperationLabel = "DatabaseTask/$action"
     }
 
-    $instanceLabel = "[All]"
-    if($instance) { $instanceLabel = $instance }
-
-    if($PSCmdlet.ShouldProcess("$environment/$instanceLabel", "DatabaseTask/$action")){
-        CallTririgaApi @apiCall
-    }
+    CallTririgaApi @apiCall
 }
 
 <#
