@@ -13,6 +13,11 @@ If ``Tririga-Manage-Rest`` is installed, the ``Upload-TririgaOmp`` and
 ``Import-TririgaOmp`` can use it to find the actual server running the
 ObjectMigration agent.
 
+**Notice:** IBM and TRIRIGA are trademarks or registered trademarks of International
+Business Machines Corp.
+
+**This project is not affiliated with IBM.**
+
 .. _Tririga-Manage: https://www.powershellgallery.com/packages/Tririga-Manage
 .. _Tririga-Manage-Rest: https://www.powershellgallery.com/packages/Tririga-Manage-Rest
 
@@ -55,15 +60,64 @@ Requirements
 * For ``Tririga-Manage``: Your local Windows account must have access to the
   Windows server running TRIRIGA
 
+Installation
+------------
+.. From PowerShell Gallery
+   ~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. Enable script execution:
+
+   .. code:: ps1
+
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+#. Install the modules:
+
+   .. code:: ps1
+
+        Install-Module Tririga-Manage -Scope CurrentUser
+        Install-Module Tririga-Manage-Rest -Scope CurrentUser
+
+   If you are using *PowerShell 5.1*, some methods may not trigger automatic
+   loading of the module. Manually import the module in your ``$Profile`` file
+   to force module loading. Run in a PowerShell window:
+
+   .. code:: ps1
+
+       "Import-Module Tririga-Manage" | Out-file "$Profile" -append
+       "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
+
+#. Configure the environment as described in the `Configuration`_ section above.
+
+..
+    From Source
+    ~~~~~~~~~~~
+    #. Download the distibution zip file from the `releases page
+    <https://github.com/nithinphilips/tririga-manage-ps1/releases/latest>`_.
+    #. Open a PowerShell window in the same directory as the zip file
+    #. Run::
+
+            Unblock-File tririga-manage-ps1-4.6.0.zip
+            Expand-Archive tririga-manage-ps1-4.6.0.zip -DestinationPath .
+            .\tririga-manage-ps1\Install.ps1
+
+    If you are using *PowerShell 5.1*, some methods may not trigger automatic loading
+    of the module. Add this to your ``$Profile`` file to force module loading:
+
+    .. code:: ps1
+
+        "Import-Module Tririga-Manage" | Out-file "$Profile" -append
+        "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
+
 Commands
 --------
-The see the latest help, run:
+The see a list of all commands, run:
 
 .. code:: ps1
 
-    Get-Command -Module Tririga-Manage* | % {Get-Help $_.Name} | Select-Object Name,Synopsis | Format-Table
+    Get-Command -Module Tririga-Manage*
 
-To see detailed help for a command, run:
+To view detailed help for a command, run:
 
 .. code:: ps1
 
@@ -209,7 +263,7 @@ This output is still an object. To get just the text value:
 
 .. code:: ps1
 
-    PS> Get-TririgaSummary LOCALTWO | %{ $_.operatingSytem } 
+    PS> Get-TririgaSummary LOCALTWO | %{ $_.operatingSytem }
     Linux amd64 null
 
 If you want to run this against all your environments, you can run:
@@ -410,30 +464,30 @@ The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
 .. csv-table::
     :header-rows: 1
     :stub-columns: 1
-
+ 
     Name,Synopsis
-    Open-TririgaDatabase,Opens Dbeaver and connects to the TRIRIGA database
-    Get-TririgaEnvironment,Gets all known environments
-    Open-TririgaFolder,Opens a TRIRIGA installation directory path
-    Enter-TririgaHost,Starts a remote powershell session to a TRIRIGA instance
-    Get-TririgaInstance,Gets all known instances in a given environment
-    Get-TririgaLog,Tails a TRIRIGA log file
-    Open-TririgaLog,Opens a TRIRIGA log file
-    Upload-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
-    Import-TririgaOmp,Uploads and imports a local OMP zip file to TRIRIGA
-    Save-TririgaOmp,Uploads a local OMP zip file to TRIRIGA
-    Open-TririgaRDP,Opens an RDP client connection to the TRIRIGA server
-    Disable-TririgaService,Disables TRIRIGA service
-    Enable-TririgaService,Enables TRIRIGA service
-    Get-TririgaService,Get the current status of TRIRIGA service
-    Restart-TririgaService,Restarts TRIRIGA service
-    Start-TririgaService,Starts TRIRIGA service
-    Stop-TririgaService,Stops TRIRIGA service
-    Open-TririgaWasFolder,Opens a WebSphere profile path
-    Get-TririgaWasLog,Tails a WebSphere log file
-    Open-TririgaWasLog,Opens a WebSphere log file
-    Open-TririgaWasWeb,Opens the WebSphere Admin Console
-    Open-TririgaWeb,Opens a TRIRIGA environment
+    `Open-TririgaDatabase <docs/Open-TririgaDatabase.md>`_,Opens Dbeaver and connects to the TRIRIGA database
+    `Get-TririgaEnvironment <docs/Get-TririgaEnvironment.md>`_,Gets all known environments
+    `Open-TririgaFolder <docs/Open-TririgaFolder.md>`_,Opens a TRIRIGA installation directory path
+    `Enter-TririgaHost <docs/Enter-TririgaHost.md>`_,Starts a remote powershell session to a TRIRIGA instance
+    `Get-TririgaInstance <docs/Get-TririgaInstance.md>`_,Gets all known instances in a given environment
+    `Get-TririgaLog <docs/Get-TririgaLog.md>`_,Tails a TRIRIGA log file
+    `Open-TririgaLog <docs/Open-TririgaLog.md>`_,Opens a TRIRIGA log file
+    `Upload-TririgaOmp <docs/Upload-TririgaOmp.md>`_,Uploads a local OMP zip file to TRIRIGA
+    `Import-TririgaOmp <docs/Import-TririgaOmp.md>`_,Uploads and imports a local OMP zip file to TRIRIGA
+    `Save-TririgaOmp <docs/Save-TririgaOmp.md>`_,Uploads a local OMP zip file to TRIRIGA
+    `Open-TririgaRDP <docs/Open-TririgaRDP.md>`_,Opens an RDP client connection to the TRIRIGA server
+    `Disable-TririgaService <docs/Disable-TririgaService.md>`_,Disables TRIRIGA service
+    `Enable-TririgaService <docs/Enable-TririgaService.md>`_,Enables TRIRIGA service
+    `Get-TririgaService <docs/Get-TririgaService.md>`_,Get the current status of TRIRIGA service
+    `Restart-TririgaService <docs/Restart-TririgaService.md>`_,Restarts TRIRIGA service
+    `Start-TririgaService <docs/Start-TririgaService.md>`_,Starts TRIRIGA service
+    `Stop-TririgaService <docs/Stop-TririgaService.md>`_,Stops TRIRIGA service
+    `Open-TririgaWasFolder <docs/Open-TririgaWasFolder.md>`_,Opens a WebSphere profile path
+    `Get-TririgaWasLog <docs/Get-TririgaWasLog.md>`_,Tails a WebSphere log file
+    `Open-TririgaWasLog <docs/Open-TririgaWasLog.md>`_,Opens a WebSphere log file
+    `Open-TririgaWasWeb <docs/Open-TririgaWasWeb.md>`_,Opens the WebSphere Admin Console
+    `Open-TririgaWeb <docs/Open-TririgaWeb.md>`_,Opens a TRIRIGA environment
 .. ##END TABLE TRIRIGA MANAGE
 
 Tririga-Manage-Rest Module
@@ -444,92 +498,45 @@ The Tririga-Manage-Rest module operates on TRIRIGA using the management REST API
 .. csv-table::
     :header-rows: 1
     :stub-columns: 1
-
+ 
     Name,Synopsis
-    Get-TririgaActiveUser,Gets a list of currently logged in users
-    Get-TririgaAdminUser,Gets a list of users who can access the TRIRIGA Admin Console
-    Get-TririgaAgent,Gets TRIRIGA Agents configuration
-    Start-TririgaAgent,Starts a TRIRIGA agent
-    Stop-TririgaAgent,Stops a TRIRIGA agent
-    Get-TririgaAgentHost,Gets the configured host(s) for the given agent
-    Get-TririgaBuildNumber,Gets TRIRIGA build number
-    Clear-TririgaBusinessObject,"Clears Business Object Records, removes stale data (12 hrs and older)"
-    Clear-TririgaCache,Clears a cache
-    Get-TririgaCacheHierarchyTree,Gets the hierarchy tree cache status details
-    Get-TririgaCacheMode,Gets the cache processing mode
-    Set-TririgaCacheMode,Sets the cache processing mode
-    Get-TririgaDatabase,Gets the database environment information
-    Clear-TririgaDatabaseAll,Runs a full database cleanup
-    Get-TririgaDatabaseSpace,Gets the database space information
-    Invoke-TririgaDatabaseTask,Invokes a database task
-    Write-TririgaLogMessage,Write a message to TRIRIGA Log file
-    Reload-TririgaPlatformLogging,Reload logging categories from disk
-    Disable-TririgaPlatformLogging,Disables TRIRIGA platform Logging for the given categories
-    Enable-TririgaPlatformLogging,Enables TRIRIGA platform Logging for the given categories
-    Get-TririgaPlatformLogging,Gets information about TRIRIGA platform Logging
-    Sync-TririgaPlatformLogging,Reload logging categories from disk
-    Add-TririgaPlatformLoggingCategory,Add a new platform logging category and level
-    Reset-TririgaPlatformLoggingDuplicates,Reset duplicate categories
-    Get-TririgaProperty,Gets a setting in a TRIRIGA properties file
-    Set-TririgaProperty,Sets settings in a TRIRIGA properties file
-    Clear-TririgaScheduledEvent,Clears Scheduled Events
-    Get-TririgaServerInformation,Retrieves information about the TRIRIGA server.
-    Get-TririgaServerXml,Get the WebSphere Liberty server.xml file
-    Get-TririgaSummary,Gets basic information about a TRIRIGA instance
-    Lock-TririgaSystem,Locks the TRIRIGA server
-    Unlock-TririgaSystem,Unlocks the TRIRIGA server
-    Clear-TririgaWorkflowInstance,Clears Workflow Instance data
-    Disable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ERRORS_ONLY
-    Enable-TririgaWorkflowInstance,Sets the workflow instance recording setting to ALWAYS
-    Set-TririgaWorkflowInstance,Updates workflow instance recording setting
+    `Get-TririgaActiveUser <docs/Get-TririgaActiveUser.md>`_,Gets a list of currently logged in users
+    `Get-TririgaAdminUser <docs/Get-TririgaAdminUser.md>`_,Gets a list of users who can access the TRIRIGA Admin Console
+    `Get-TririgaAgent <docs/Get-TririgaAgent.md>`_,Gets TRIRIGA Agents configuration
+    `Start-TririgaAgent <docs/Start-TririgaAgent.md>`_,Starts a TRIRIGA agent
+    `Stop-TririgaAgent <docs/Stop-TririgaAgent.md>`_,Stops a TRIRIGA agent
+    `Get-TririgaAgentHost <docs/Get-TririgaAgentHost.md>`_,Gets the configured host(s) for the given agent
+    `Get-TririgaBuildNumber <docs/Get-TririgaBuildNumber.md>`_,Gets TRIRIGA build number
+    `Clear-TririgaBusinessObject <docs/Clear-TririgaBusinessObject.md>`_,"Clears Business Object Records, removes stale data (12 hrs and older)"
+    `Clear-TririgaCache <docs/Clear-TririgaCache.md>`_,Clears a cache
+    `Get-TririgaCacheHierarchyTree <docs/Get-TririgaCacheHierarchyTree.md>`_,Gets the hierarchy tree cache status details
+    `Get-TririgaCacheMode <docs/Get-TririgaCacheMode.md>`_,Gets the cache processing mode
+    `Set-TririgaCacheMode <docs/Set-TririgaCacheMode.md>`_,Sets the cache processing mode
+    `Get-TririgaDatabase <docs/Get-TririgaDatabase.md>`_,Gets the database environment information
+    `Clear-TririgaDatabaseAll <docs/Clear-TririgaDatabaseAll.md>`_,Runs a full database cleanup
+    `Get-TririgaDatabaseSpace <docs/Get-TririgaDatabaseSpace.md>`_,Gets the database space information
+    `Invoke-TririgaDatabaseTask <docs/Invoke-TririgaDatabaseTask.md>`_,Invokes a database task
+    `Write-TririgaLogMessage <docs/Write-TririgaLogMessage.md>`_,Write a message to TRIRIGA Log file
+    `Reload-TririgaPlatformLogging <docs/Reload-TririgaPlatformLogging.md>`_,Reload logging categories from disk
+    `Disable-TririgaPlatformLogging <docs/Disable-TririgaPlatformLogging.md>`_,Disables TRIRIGA platform Logging for the given categories
+    `Enable-TririgaPlatformLogging <docs/Enable-TririgaPlatformLogging.md>`_,Enables TRIRIGA platform Logging for the given categories
+    `Get-TririgaPlatformLogging <docs/Get-TririgaPlatformLogging.md>`_,Gets information about TRIRIGA platform Logging
+    `Sync-TririgaPlatformLogging <docs/Sync-TririgaPlatformLogging.md>`_,Reload logging categories from disk
+    `Add-TririgaPlatformLoggingCategory <docs/Add-TririgaPlatformLoggingCategory.md>`_,Add a new platform logging category and level
+    `Reset-TririgaPlatformLoggingDuplicates <docs/Reset-TririgaPlatformLoggingDuplicates.md>`_,Reset duplicate categories
+    `Get-TririgaProperty <docs/Get-TririgaProperty.md>`_,Gets a setting in a TRIRIGA properties file
+    `Set-TririgaProperty <docs/Set-TririgaProperty.md>`_,Sets settings in a TRIRIGA properties file
+    `Clear-TririgaScheduledEvent <docs/Clear-TririgaScheduledEvent.md>`_,Clears Scheduled Events
+    `Get-TririgaServerInformation <docs/Get-TririgaServerInformation.md>`_,Retrieves information about the TRIRIGA server.
+    `Get-TririgaServerXml <docs/Get-TririgaServerXml.md>`_,Get the WebSphere Liberty server.xml file
+    `Get-TririgaSummary <docs/Get-TririgaSummary.md>`_,Gets basic information about a TRIRIGA instance
+    `Lock-TririgaSystem <docs/Lock-TririgaSystem.md>`_,Locks the TRIRIGA server
+    `Unlock-TririgaSystem <docs/Unlock-TririgaSystem.md>`_,Unlocks the TRIRIGA server
+    `Clear-TririgaWorkflowInstance <docs/Clear-TririgaWorkflowInstance.md>`_,Clears Workflow Instance data
+    `Disable-TririgaWorkflowInstance <docs/Disable-TririgaWorkflowInstance.md>`_,Sets the workflow instance recording setting to ERRORS_ONLY
+    `Enable-TririgaWorkflowInstance <docs/Enable-TririgaWorkflowInstance.md>`_,Sets the workflow instance recording setting to ALWAYS
+    `Set-TririgaWorkflowInstance <docs/Set-TririgaWorkflowInstance.md>`_,Updates workflow instance recording setting
 .. ##END TABLE TRIRIGA MANAGE REST
-
-
-Installation
-------------
-From PowerShell Gallery
-~~~~~~~~~~~~~~~~~~~~~~~~
-You may need to enable script execution:
-
-.. code:: ps1
-
-    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-Run:
-
-.. code:: ps1
-
-    Install-Module Tririga-Manage -Scope CurrentUser
-    Install-Module Tririga-Manage-Rest -Scope CurrentUser
-
-Configure the environment as described in the `Configuration`_ section above.
-
-If you are using PowerShell 5.1, some methods may not trigger automatic loading
-of the module. Add this to your ``$Profile`` file to force module loading:
-
-.. code:: ps1
-
-    "Import-Module Tririga-Manage" | Out-file "$Profile" -append
-    "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
-
-From Source
-~~~~~~~~~~~
-#. Download the distibution zip file from the `releases page
-   <https://github.com/nithinphilips/tririga-manage-ps1/releases/latest>`_.
-#. Open a PowerShell window in the same directory as the zip file
-#. Run::
-
-        Unblock-File tririga-manage-ps1-4.6.0.zip
-        Expand-Archive tririga-manage-ps1-4.6.0.zip -DestinationPath .
-        .\tririga-manage-ps1\Install.ps1
-
-If you are using PowerShell 5.1, some methods may not trigger automatic loading
-of the module. Add this to your ``$Profile`` file to force module loading:
-
-.. code:: ps1
-
-    "Import-Module Tririga-Manage" | Out-file "$Profile" -append
-    "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
 
 License
 -------

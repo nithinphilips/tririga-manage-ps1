@@ -38,14 +38,14 @@ ChangeLog.%.md: ChangeLog.md
 # Select-Object Name,Synopsis,ModuleName
 %.csv: $(PSFILES)
 	pwsh -Command "\$$env:PSModulePath = (Resolve-Path .).Path; Get-Command -Module $* | % {\$$h=(Get-Help \$$_.Name); if(\$$_.CommandType -eq \"Alias\") {Add-Member -Force -InputObject \$$h "Name" \$$_.Name}; \$$h} | Select-Object Name,Synopsis | Export-CSV $*.csv"
-	mlr --icsv --ocsv put '$$SortName = splitax($$Name, "-")[2]' then sort -f SortName then cut -x -f SortName then clean-whitespace $@ > $@.tmp
+	mlr --icsv --ocsv put '$$SortName = splitax($$Name, "-")[2]' then put '$$Name = format("`{} <docs/{}.md>`_", $$Name,$$Name)' then sort -f SortName then cut -x -f SortName then clean-whitespace $@ > $@.tmp
 	mv $@.tmp $@
 
 %.rst.tmp: %.csv
 	echo ".. csv-table::" > $@
 	echo "    :header-rows: 1" >> $@
 	echo "    :stub-columns: 1" >> $@
-	echo "" >> $@
+	echo " " >> $@
 	sed 's/^/    /g' $< >> $@
 
 $(DISTROOT)/$(DISTZIP): update-module update-readme $(DIST_EXTRAS) $(PSFILES)
@@ -56,15 +56,26 @@ $(DISTROOT)/$(DISTZIP): update-module update-readme $(DIST_EXTRAS) $(PSFILES)
 	cd $(DISTROOT) && zip -r $(DISTZIP) $(DISTBASE)/
 	rm -rf $(DISTDIR)
 
-
 environments.sample.psd1.tmp: environments.sample.psd1
 	echo "   .. code:: ps1" > $@
 	echo "   " >> $@
 	sed 's/^/        /g' $< >> $@
 	dos2unix $@
 
-update-module: ChangeLog.$(GIT_TAG).md
+# TODO: Pickup additional module files (except tests)
+Tririga-Manage/Tririga-Manage.psd1 Tririga-Manage-Rest/Tririga-Manage-Rest.psd1: Tririga-Manage/Tririga-Manage.psm1 Tririga-Manage-Rest/Tririga-Manage-Rest.psm1
 	pwsh Install.ps1 -UpdateModule -NoInstallModule -ReleaseNoteFile $<
+
+# Need: https://github.com/PowerShell/platyPS for docs generation
+create-docs:
+	mkdir -p docs
+	pwsh -Command "\$$env:PSModulePath = \"\$$(Resolve-Path .)\" + [IO.Path]::PathSeparator + \$$env:PSModulePath; Import-Module Tririga-Manage -Force; Import-Module Tririga-Manage-Rest -Force; New-MarkdownHelp -OutputFolder docs -Module Tririga-Manage, Tririga-Manage-Rest"
+
+update-docs:
+	mkdir -p docs
+	pwsh -Command "\$$env:PSModulePath = \"\$$(Resolve-Path .)\" + [IO.Path]::PathSeparator + \$$env:PSModulePath; Import-Module Tririga-Manage -Force; Import-Module Tririga-Manage-Rest -Force; Update-MarkdownHelpModule -Path docs -AlphabeticParamsOrder -RefreshModulePage -UpdateInputOutput"
+
+update-module: Tririga-Manage/Tririga-Manage.psd1 Tririga-Manage-Rest/Tririga-Manage-Rest.psd1 ChangeLog.$(GIT_TAG).md
 
 update-readme: update-module Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp environments.sample.psd1.tmp
 	# Delete everything between these lines

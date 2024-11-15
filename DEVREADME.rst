@@ -9,6 +9,8 @@ To load the module from the project directory:
 
     . SetupDev.ps1
 
+Repeat the command to reload module.
+
 To see debug log messages, set:
 
 .. code:: ps1
@@ -28,6 +30,9 @@ We have commands that:
 
 #. By default, operate on all instances in an environment, but can optionally
    operate on a single instance.
+
+   Use this model for changes that can be uniquely set on each server, such as
+   a Property ``Get-Property`` and ``Set-Property``)
 
    .. code:: ps1
 
@@ -69,11 +74,15 @@ We have commands that:
     )
 
    You may also want to remove Position from ``$instance`` to be consistent
-   with same nouns. Eg: ``*-WorkflowInstance``
+   with same nouns. Eg: ``Set-WorkflowInstance`` and ``Get-WorkflowInstance``
+   must have the same semantics.
 
 #. By default operate on the first instance in an environment, but can
    optionally operate on any specific instance or all instances with the
    ``-All`` switch (only where it makes sense).
+
+   Use this models for commands that are ultimately database bound, such
+   as ``Get-Agent`` or ``Start-Agent``.
 
    .. code:: ps1
 
@@ -99,9 +108,25 @@ We have commands that:
             ...
        }
 
+#. Any commands that will modify the system must implement the SupportsShouldProcess interface:
+
+   .. code:: ps1
+
+       [CmdletBinding(SupportsShouldProcess)]
+       param(
+            ...
+
+   In most cases, all you need to do is pass ``OperationLabel`` to
+   ``CallTririgaApi`` to activate confirmation. User will be asked to confirm
+   change to each instance.
+
 Publish
 -------
 To publish the modules to Gitea
+
+#. Make sure all tests pass::
+
+        make check
 
 #. Edit ``install.ps1`` and update the version.
 #. Build dist. This will update README and module definitions::
