@@ -114,20 +114,6 @@ Installation
         "Import-Module Tririga-Manage" | Out-file "$Profile" -append
         "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
 
-Commands
---------
-The see a list of all commands, run:
-
-.. code:: ps1
-
-    Get-Command -Module Tririga-Manage*
-
-To view detailed help for a command, run:
-
-.. code:: ps1
-
-    Get-Help <command> -Detailed
-
 Configuration
 -------------
 Before using the commands, you will need to set a configuration variable named
@@ -461,6 +447,18 @@ to ``https`` while preserving the rest of the value. To do that, run:
 
 Available Commands
 ------------------
+The see a list of all commands, run:
+
+.. code:: ps1
+
+    Get-Command -Module Tririga-Manage*
+
+To view detailed help for a command, run:
+
+.. code:: ps1
+
+    Get-Help <command> -Detailed
+
 Tririga-Manage Module
 ~~~~~~~~~~~~~~~~~~~~~
 The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
