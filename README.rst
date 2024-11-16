@@ -15,23 +15,13 @@ ObjectMigration agent.
 
 
 .. pull-quote::
-    **NOTE**
+
+    **!NOTE**
 
     IBM and TRIRIGA are trademarks or registered trademarks of International
     Business Machines Corp.
 
-**This project is not affiliated with IBM.**
-
-#. List item
-
-   .. code:: bash
-
-      Do something
-
-   .. pull-quote::
-      **Warning**
-      
-      **NB:** Something to be aware of
+    **This project is not affiliated with IBM.**
 
 .. _Tririga-Manage: https://www.powershellgallery.com/packages/Tririga-Manage
 .. _Tririga-Manage-Rest: https://www.powershellgallery.com/packages/Tririga-Manage-Rest
