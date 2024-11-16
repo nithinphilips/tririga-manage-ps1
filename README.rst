@@ -13,8 +13,12 @@ If ``Tririga-Manage-Rest`` is installed, the ``Upload-TririgaOmp`` and
 ``Import-TririgaOmp`` can use it to find the actual server running the
 ObjectMigration agent.
 
-**Notice:** IBM and TRIRIGA are trademarks or registered trademarks of International
-Business Machines Corp.
+
+.. pull-quote::
+    **NOTE**
+
+    **NB:** IBM and TRIRIGA are trademarks or registered trademarks of International
+            Business Machines Corp.
 
 **This project is not affiliated with IBM.**
 
