@@ -21,7 +21,7 @@ ObjectMigration agent.
     IBM and TRIRIGA are trademarks or registered trademarks of International
     Business Machines Corp.
 
-    **This project is not affiliated with IBM.**
+    This project is not affiliated with IBM.
 
 .. _Tririga-Manage: https://www.powershellgallery.com/packages/Tririga-Manage
 .. _Tririga-Manage-Rest: https://www.powershellgallery.com/packages/Tririga-Manage-Rest
@@ -129,7 +129,7 @@ To view detailed help for a command, run:
     Get-Help <command> -Detailed
 
 Configuration
-~~~~~~~~~~~~~
+-------------
 Before using the commands, you will need to set a configuration variable named
 ``$TririgaEnvironments`` with details about your environments.
 
@@ -225,7 +225,7 @@ the ``$DBeaverBin`` variable with the path to the ``dbeaver.exe`` file.
    .. ##END CONFIG SAMPLE
 
 Usage
-~~~~~
+-----
 All commands accept a ``-Environment`` argument. For example, with the sample
 configuration above, you can use either ``-Environment LOCAL`` or ``-Environment REMOTE``
 
@@ -236,7 +236,7 @@ configuration above, you can use either ``-Instance ONE`` or ``-Instance TWO``
 with ``-Environment LOCAL``.
 
 Tririga-Manage-Rest Module
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 Let's start with getting information about the environment. Use
 ``Get-TririgaSummary`` command:
 
@@ -460,9 +460,9 @@ to ``https`` while preserving the rest of the value. To do that, run:
 
 
 Available Commands
-~~~~~~~~~~~~~~~~~~
+------------------
 Tririga-Manage Module
-^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~
 The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
 
 .. ##BEGIN TABLE TRIRIGA MANAGE
@@ -496,7 +496,7 @@ The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
 .. ##END TABLE TRIRIGA MANAGE
 
 Tririga-Manage-Rest Module
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 The Tririga-Manage-Rest module operates on TRIRIGA using the management REST API.
 
 .. ##BEGIN TABLE TRIRIGA MANAGE REST
