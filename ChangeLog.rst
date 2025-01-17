@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+v5.0.0
+------
+* Markdown documentation is now generated for each command and can be `browsed
+  on Github <https://github.com/nithinphilips/tririga-manage-ps1/tree/main?tab=readme-ov-file#tririga-manage-module>`_.
+* TRIRIGA passwords are now stored encrypted.
+
 v4.7.0
 ------
 * Support piping output of ``Get-TririgaProperty`` into ``Set-TririgaProperty``

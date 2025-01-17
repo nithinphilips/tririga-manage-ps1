@@ -7,6 +7,9 @@ AWS_BUCKET=tririga-shared-files-np
 
 NO_GIT_REMOTE_CHECK?=0
 
+NO_GITHUB_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
+NO_GITEA_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
+
 VERSION:=$(shell sed -n "s/ModuleVersion = '\(.*\)'/\1/p" Tririga-Manage/Tririga-Manage.psd1)
 PSFILES:=$(shell find . \( -iname *.psd1 -or -iname *.psm1 \) -and ! -path "*dist/*")
 
@@ -17,7 +20,21 @@ DISTBASE:=tririga-manage-ps1
 DISTDIR:=$(DISTROOT)/$(DISTBASE)
 DISTZIP:=tririga-manage-ps1-$(VERSION).zip
 
+# These flags allow us to enable/disable Github and Gitea remote release separately.
+ENABLE_GITHUB_RELEASE?=1
+ENABLE_GITEA_RELEASE?=1
 
+GITHUB_REMOTE_NAME:=origin
+GITEA_REMOTE_NAME:=gitea
+
+# If a repository remote is disabled, always skip remote tag check
+ifeq ($(ENABLE_GITHUB_RELEASE), 0)
+ NO_GITHUB_REMOTE_CHECK:=1
+endif
+
+ifeq ($(ENABLE_GITEA_RELEASE), 0)
+ NO_GITEA_REMOTE_CHECK:=1
+endif
 
 DIST_EXTRAS:=Install.ps1 environments.sample.psd1 README.rst ChangeLog.rst README.docx ChangeLog.docx
 
@@ -63,7 +80,7 @@ environments.sample.psd1.tmp: environments.sample.psd1
 	dos2unix $@
 
 # TODO: Pickup additional module files (except tests)
-Tririga-Manage/Tririga-Manage.psd1 Tririga-Manage-Rest/Tririga-Manage-Rest.psd1: Tririga-Manage/Tririga-Manage.psm1 Tririga-Manage-Rest/Tririga-Manage-Rest.psm1 Install.ps1
+Tririga-Manage/Tririga-Manage.psd1 Tririga-Manage-Rest/Tririga-Manage-Rest.psd1: ChangeLog.$(GIT_TAG).md Tririga-Manage/Tririga-Manage.psm1 Tririga-Manage-Rest/Tririga-Manage-Rest.psm1 Install.ps1
 	pwsh Install.ps1 -UpdateModule -NoInstallModule -ReleaseNoteFile $<
 
 # Need: https://github.com/PowerShell/platyPS for docs generation
@@ -95,30 +112,30 @@ release-check: code-check
 	# Check if repo is clean
 	#git diff-index --quiet HEAD -- || (echo "You have uncommited changes. Commit them before release."; exit 1) && (printf "\e[1;38:5:40m✓\e[0m No uncommited changes\n")
 	# Check if a ChangeLog entry exists
-	test $(shell grep -c '^$(GIT_TAG)' ChangeLog.rst) -eq 1 || (echo "Please add a change log entry for release $(GIT_TAG) before releasing"; exit 1) && (printf "\e[1;38:5:40m✓\e[0m ChangeLog entry exists for release $(GIT_TAG)\n")
+	test $(shell grep -c '^$(GIT_TAG)' ChangeLog.rst) -eq 1 || (echo "Error: Please add a change log entry for release $(GIT_TAG) before releasing"; exit 1) && (printf "\e[1;38:5:40m✓\e[0m ChangeLog entry exists for release $(GIT_TAG)\n")
 	# Check if the tag exists in the local repo
 	test $(shell git tag -l | grep -x -c -F "$(GIT_TAG)") -eq 1 || ( echo "The tag $(GIT_TAG) does not exit in this repository. Tag your release first. Run: make git-tag"; exit 1 ) && (printf "\e[1;38:5:40m✓\e[0m Git Tag exists for release $(GIT_TAG)\n")
 	# Check if the tag exists in the remote repo
 	# git ls-remote will open a connection to the remote repository!
-	if [ $(NO_GIT_REMOTE_CHECK) -eq 0 ]; then \
-			if [ $$(git ls-remote --tags origin | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
-				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to origin\n"; \
+	if [ $(NO_GITHUB_REMOTE_CHECK) -eq 0 ]; then \
+			if [ $$(git ls-remote --tags $(GITHUB_REMOTE_NAME) | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
+				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to $(GITHUB_REMOTE_NAME)\n"; \
 			else \
-				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to origin. Push your tags first by running: git push --tags\n"; \
+				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to $(GITHUB_REMOTE_NAME). Push your tags first by running: git push --tags\n"; \
 				exit 1; \
 			fi \
 	else \
-		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to origin because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
+		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to $(GITHUB_REMOTE_NAME) because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
 	fi
-	if [ $(NO_GIT_REMOTE_CHECK) -eq 0 ]; then \
-			if [ $$(git ls-remote --tags gitea | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
-				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to gitea\n"; \
+	if [ $(NO_GITEA_REMOTE_CHECK) -eq 0 ]; then \
+			if [ $$(git ls-remote --tags $(GITEA_REMOTE_NAME) | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
+				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to $(GITEA_REMOTE_NAME)\n"; \
 			else \
-				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to gitea. Push your tags first by running: git push gitea --tags \n"; \
+				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to $(GITEA_REMOTE_NAME). Push your tags first by running: git push $(GITEA_REMOTE_NAME) --tags \n"; \
 				exit 1; \
 			fi \
 	else \
-		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to gitea because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
+		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to $(GITEA_REMOTE_NAME) because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
 	fi
 
 release-github: update-module dist ChangeLog.$(GIT_TAG).md release-check
@@ -147,7 +164,18 @@ check: update-module
 code-check:
 	pwsh -Command "Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage | ft -AutoSize; Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage-Rest | ft -AutoSize"
 
-release: release-gitea release-github publish-gitea publish-psgallery ## Releases to Gitea and Github
+# Dynamically set release dependencies depending on which remotes are enabled
+RELEASE_DEPS:=
+
+ifeq ($(ENABLE_GITHUB_RELEASE),1)
+ RELEASE_DEPS:=$(RELEASE_DEPS) release-github
+endif
+
+ifeq ($(ENABLE_GITEA_RELEASE),1)
+ RELEASE_DEPS:=$(RELEASE_DEPS) release-gitea publish-gitea
+endif
+
+release: $(RELEASE_DEPS) publish-psgallery ## Releases to remotes and galleries
 
 publish-aws: dist # Published the dist file to Amazon AWS
 	aws s3 cp "$(DISTROOT)/$(DISTZIP)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(DISTZIP)"
