@@ -1,5 +1,36 @@
 TODO
 ====
+
+
+Install Flow:
+
+Install-Module Tririga-Manage -Scope CurrentUser
+Install-Module Tririga-Manage-Rest -Scope CurrentUser
+
+Initialize-TririgaConfiguration
+
+Security
+
+- [ ] Store password in secure format::
+
+        PS> Set-TririgaCredential DEV -Username nithin -Password blah
+
+        PS> Set-TririgaCredential DEV -Username nithin
+        Enter your password: sfkljsadf
+
+  After password is entered, encrypt it and store in ``$env:LocalAppData\tririga-manage-ps1\DEV.data``
+
+  https://www.techtarget.com/searchitoperations/tutorial/How-to-secure-passwords-with-PowerShell
+
+  Maybe do this in Profile using a Command
+
+  $TririgaEnvironment = Load-TririgaConfiguration "abc.psd1"
+  > environments to variable
+  > Load passwords and attach it to the environments variable
+  > Password is still a secure string
+  > The API call method will turn it into regular string
+
+
 http://localhost:9080/api/doc/p/bos
 
 - [ ] Get-BusinessObject [name,moduleid]

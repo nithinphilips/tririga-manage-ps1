@@ -92,7 +92,7 @@ Installation
        "Import-Module Tririga-Manage" | Out-file "$Profile" -append
        "Import-Module Tririga-Manage-Rest" | Out-file "$Profile" -append
 
-#. Configure the environment as described in the `Configuration`_ section above.
+#. Configure the environment as described in the `Configuration`_ section.
 
 ..
     From Source
@@ -126,28 +126,9 @@ the ``$DBeaverBin`` variable with the path to the ``dbeaver.exe`` file.
 
    .. code:: ps1
 
-        $EnvironmentSampleLocation = "https://raw.githubusercontent.com/nithinphilips/tririga-manage-ps1/refs/heads/main/environments.sample.psd1"
+        Initialize-TririgaConfiguration
 
-        $profileDir = Split-Path $Profile -Parent
-        $environmentsFile = Join-Path $profileDir "environments.psd1"
-
-        New-Item -Type Directory -Path $profileDir -Force | Out-Null
-
-        If (!(Test-Path -Path "$Profile") -or !(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
-        {
-            if (!(Test-Path -Path $environmentsFile)) {
-                (Invoke-WebRequest $EnvironmentSampleLocation).Content | Out-File $environmentsFile
-                Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
-            }
-
-            Write-Host "Installing this script to your PowerShell profile $Profile"
-            "`$TririgaEnvironments = (Import-PowerShellDataFile `"$environmentsFile`")" | Out-file "$Profile" -append
-            "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
-        } else {
-            echo "Profile already configured"
-        }
-
-   Note the location of the sample file.
+   Note the location of the sample file that is printed.
 
 #. Edit the sample file. Refer to the comments for instructions:
 
@@ -165,9 +146,6 @@ the ``$DBeaverBin`` variable with the path to the ``dbeaver.exe`` file.
                 Warn = $False;
                 # The DBeaver profile associated with this environment
                 DbProfile = "Tririga Local";
-                # Tririga Username and Password (non-SSO) for use with the REST api calls
-                Username = "system";
-                Password = "badadmin";
                 # List of all your TRIRIGA servers/instances
                 Servers = @{
                     # The key is the unique name you want to use for this instance
@@ -209,6 +187,21 @@ the ``$DBeaverBin`` variable with the path to the ``dbeaver.exe`` file.
             };
         }
    .. ##END CONFIG SAMPLE
+
+#. To use the REST API with ``Tririga-Manage-Rest``, you need to enter a
+   username and password. These are stored separately from the server
+   configuration and encrypted using the `Windows Data Protection API`_.
+
+   To store credentials, run::
+
+        Set-TririgaCredential <environment>
+
+   The ``<environment>`` name must match the environment name used in the
+   ``environments.psd1`` file.
+
+   Repeat the command for each environment.
+
+.. _Windows Data Protection API: https://learn.microsoft.com/en-us/previous-versions/windows/apps/hh464970(v=win.10)
 
 Usage
 -----
@@ -399,14 +392,14 @@ This is a common need, so you can use the convenience shortcut:
 
 Operations that affect the system state all have a ``-WhatIf`` and ``-Confirm`` switches.
 
-Use ``-WhatIf`` switch to preview the changes:
+Use ``-WhatIf`` switch to preview the changes without making any changes:
 
 .. code:: ps1
 
     > Stop-TririgaAgent LOCAL WFAgent -WhatIf
     What if: Performing the operation "Stop" on target "WFAgent [202] on localhost".
 
-Use ``-Confirm`` switch to review each change:
+Use ``-Confirm`` switch to review each change as they are applied:
 
 .. code:: ps1
 
@@ -419,7 +412,8 @@ Use ``-Confirm`` switch to review each change:
 
 You will see one prompt for each change the the command is about to make. For
 example, with Workflow Agents, you may have several agents. You will be asked
-to confirm *Stop* on each of these agents.
+to confirm *Stop* on each of these agents. You can stop some and leave others
+running.
 
 ----
 
@@ -458,6 +452,8 @@ To view detailed help for a command, run:
 .. code:: ps1
 
     Get-Help <command> -Detailed
+
+You can click on the command names below to learn more about each command.
 
 Tririga-Manage Module
 ~~~~~~~~~~~~~~~~~~~~~

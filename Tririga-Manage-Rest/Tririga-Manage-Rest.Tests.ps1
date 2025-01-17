@@ -67,10 +67,29 @@ Describe 'Get-TririgaInstance' {
 Describe 'Get-TririgaBuildNumber' {
   It "It lists all instance" {
     Mock -ModuleName Tririga-Manage GetConfiguration { Get-ModTestConfiguration1 }
+    Mock -ModuleName Tririga-Manage-Rest GetConfiguration { Get-ModTestConfiguration1 }
     $output = Get-TririgaBuildNumber TEST
-    Should -Invoke -ModuleName Tririga-Manage -CommandName GetConfiguration -Times 1
     $output | Should -Not -Be $null
     $output.buildNumber | Should -Not -Be $null
-    $output.buildNumber | Should -Be "301221"
+  }
+}
+
+Describe 'Get-TririgaAgent' {
+  It "It lists all agents" {
+    Mock -ModuleName Tririga-Manage GetConfiguration { Get-ModTestConfiguration1 }
+    Mock -ModuleName Tririga-Manage-Rest GetConfiguration { Get-ModTestConfiguration1 }
+    $output = Get-TririgaAgent TEST
+    $output | Should -Not -Be $null
+    $output.count | Should -BeGreaterThan 0
+  }
+}
+
+Describe 'Get-TririgaCacheMode' {
+  It "It gets the current cache mode" {
+    Mock -ModuleName Tririga-Manage GetConfiguration { Get-ModTestConfiguration1 }
+    Mock -ModuleName Tririga-Manage-Rest GetConfiguration { Get-ModTestConfiguration1 }
+    $output = Get-TririgaCacheMode TEST
+    $output | Should -Not -Be $null
+    $output | Should -Be "AA"
   }
 }

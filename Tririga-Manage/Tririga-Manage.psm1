@@ -24,6 +24,7 @@ function GetConfiguration() {
     $TririgaEnvironments
 }
 
+# TODO: Instance should be a string array
 function GetTririgaInstances([string]$environment, [string]$instance = $null, [boolean]$warn = $true, [boolean]$force = $false) {
 
     Write-Verbose "Search for environment $environment"
@@ -208,6 +209,35 @@ function HandleOmp() {
     }
 }
 
+function Initialize-Configuration() {
+    [CmdletBinding()]
+    param()
+
+    $EnvironmentSampleLocation = "$($script:ModuleRoot)\environments.sample.psd1"
+
+    $profileDir = Split-Path $Profile -Parent
+    $environmentsFile = Join-Path $profileDir "environments.psd1"
+
+    New-Item -Type Directory -Path $profileDir -Force | Out-Null
+
+    If (!(Test-Path -Path "$Profile") -or !(Select-String -Path "$Profile" -pattern "TririgaEnvironments"))
+    {
+        if (!(Test-Path -Path $environmentsFile)) {
+            Get-Content $EnvironmentSampleLocation | Out-File $environmentsFile
+            Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
+        }
+
+        Write-Host "Configuring your PowerShell profile $Profile"
+        "`$TririgaEnvironments = (Import-PowerShellDataFile `"$environmentsFile`")" | Out-file "$Profile" -append
+        "`$DBeaverBin=`"$($env:UserProfile)\AppData\Local\DBeaver\dbeaver.exe`"" | Out-file "$Profile" -append
+    } else {
+        Write-Host "Profile already configured"
+    }
+
+    # This only applied if Tririga-Manage-Rest is installed
+    #Write-Host "If you have not already done so, run Set-TririgaCredential to set the username and password"
+}
+
 <#
 .SYNOPSIS
 Gets all known environments
@@ -301,8 +331,25 @@ function Get-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-            $serviceInfo = Invoke-Command -ComputerName $tririgaHost -ScriptBlock { Microsoft.PowerShell.Management\Get-Service "$($using:service)" }
-            $diskInfo = Invoke-Command -ComputerName $tririgaHost -ScriptBlock { Get-PSDrive -PSProvider FileSystem }
+            $remoteInfo = Invoke-Command -ComputerName $tririgaHost -ScriptBlock {
+                $serviceDetails = (Get-CimInstance -ClassName Win32_Service | Where-Object Name -eq "$($using:service)")
+                $serviceProcess = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $($serviceDetails.ProcessId)"
+                return @([PSCustomObject]@{
+                    Service = Microsoft.PowerShell.Management\Get-Service "$($using:service)"
+                    ServiceDetails = $serviceDetails
+                    ProcessId = $serviceDetails.ProcessId
+                    UpTime = ((Get-Date) - $serviceProcess.CreationDate)
+                    CommandLine = $serviceProcess.CommandLine
+                    ExecutablePath = $serviceProcess.ExecutablePath
+                    Memory = $serviceProcess.WorkingSetSize
+                    ProcessStatus = $serviceProcess.Status
+                    ProcessExecutionState = $serviceProcess.ExecutionState
+                    Drive = Get-PSDrive -PSProvider FileSystem
+                })
+            }
+
+            $serviceInfo = $remoteInfo["Service"]
+            $diskInfo = $remoteInfo["Disk"]
             $uptime = GetServiceUptime -TririgaHost $tririgaHost -Name $service
 
             if ($raw) {
@@ -329,7 +376,7 @@ function Get-Service() {
                 }
 
                 Write-Host -NoNewLine -ForegroundColor yellow "  Name: "
-                Write-Host $serviceInfo.Name
+                Write-Host "$($serviceInfo.Name) ($($remoteInfo.ProcessId))"
                 Write-Host -NoNewLine -ForegroundColor yellow "Status: "
                 Write-Host -ForegroundColor $statusColor $serviceInfo.Status
                 Write-Host -NoNewLine -ForegroundColor yellow " Label: "

@@ -13,6 +13,56 @@ function GetConfiguration() {
     $TririgaEnvironments
 }
 
+<#
+.SYNOPSIS
+Stores credential in an encrypted file
+.DESCRIPTION
+Gets a list of all known environment
+#>
+function Set-Credential() {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position=0)]
+        [string]$environment,
+        [Parameter(Mandatory, Position=1)]
+        [string]$username
+    )
+
+    $PasswordDir = "$env:LocalAppData\Tririga-Manage"
+    $PasswordFile = "$env:LocalAppData\Tririga-Manage\$environment.xml"
+
+    New-Item -Type Directory -Path $PasswordDir -Force | Out-Null
+
+    $credential = Get-Credential -UserName $Username
+    $securePasswordPath = $PasswordFile
+    $credential |  Export-Clixml -Path $PasswordFile
+
+    Write-Host "Success! Encrypted credentials are stored in $PasswordFile"
+}
+
+<#
+.SYNOPSIS
+Gets Credential from an encrypted file
+.DESCRIPTION
+Gets Credential from an encrypted file
+#>
+function _GetCredential() {
+    [CmdletBinding()]
+    param(
+        [string]$environment
+    )
+
+    $PasswordFile = "$env:LocalAppData\Tririga-Manage\$environment.xml"
+
+    If (!(Test-Path $PasswordFile)) {
+        throw "No credentials found for $environment. Please enter them by running the 'Set-TririgaCredential $environment' command."
+    }
+
+    Write-Verbose "Read credential from $PasswordFile"
+
+    Import-Clixml -Path $PasswordFile
+}
+
 # From https://stackoverflow.com/a/76555554/260740
 function GetAllCookiesFromWebRequestSession
 {
@@ -318,6 +368,8 @@ function CallTririgaApi() {
 
     $tririgaEnvironment = (GetConfiguration)[$environment]
 
+    $tririgaCredential = _GetCredential $environment
+
     if (!$tririgaEnvironment) {
         Write-Error "The environment `"$environment`" was not found."
         Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
@@ -360,7 +412,7 @@ function CallTririgaApi() {
         if ($targetLabel) { $targetLabelInst = "$environment/$inst/$targetLabel" }
 
         if($doNotConfirm -or $PSCmdlet.ShouldProcess($targetLabelInst, $operationLabel)){
-            $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaEnvironment.username -password $tririgaEnvironment.password
+            $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password (ConvertFrom-SecureString $tririgaCredential.password -AsPlainText)
 
             # TODO: Only do this of the result is PSObject
             if (!$noTag) {
