@@ -63,7 +63,7 @@ environments.sample.psd1.tmp: environments.sample.psd1
 	dos2unix $@
 
 # TODO: Pickup additional module files (except tests)
-Tririga-Manage/Tririga-Manage.psd1 Tririga-Manage-Rest/Tririga-Manage-Rest.psd1: Tririga-Manage/Tririga-Manage.psm1 Tririga-Manage-Rest/Tririga-Manage-Rest.psm1
+Tririga-Manage/Tririga-Manage.psd1 Tririga-Manage-Rest/Tririga-Manage-Rest.psd1: Tririga-Manage/Tririga-Manage.psm1 Tririga-Manage-Rest/Tririga-Manage-Rest.psm1 Install.ps1
 	pwsh Install.ps1 -UpdateModule -NoInstallModule -ReleaseNoteFile $<
 
 # Need: https://github.com/PowerShell/platyPS for docs generation

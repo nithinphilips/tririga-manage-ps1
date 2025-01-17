@@ -146,6 +146,10 @@ the ``$DBeaverBin`` variable with the path to the ``dbeaver.exe`` file.
                 Warn = $False;
                 # The DBeaver profile associated with this environment
                 DbProfile = "Tririga Local";
+                #
+                # Username and Password (non-SSO) for use with the REST api calls is
+                # stored encrypted. Run ``Set-TririgaCredential`` command to store it.
+                #
                 # List of all your TRIRIGA servers/instances
                 Servers = @{
                     # The key is the unique name you want to use for this instance
@@ -465,6 +469,7 @@ The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
     :stub-columns: 1
  
     Name,Synopsis
+    `Initialize-TririgaConfiguration <docs/Initialize-TririgaConfiguration.md>`_,Initialize-TririgaConfiguration [<CommonParameters>]
     `Open-TririgaDatabase <docs/Open-TririgaDatabase.md>`_,Opens Dbeaver and connects to the TRIRIGA database
     `Get-TririgaEnvironment <docs/Get-TririgaEnvironment.md>`_,Gets all known environments
     `Open-TririgaFolder <docs/Open-TririgaFolder.md>`_,Opens a TRIRIGA installation directory path
@@ -511,6 +516,7 @@ The Tririga-Manage-Rest module operates on TRIRIGA using the management REST API
     `Get-TririgaCacheHierarchyTree <docs/Get-TririgaCacheHierarchyTree.md>`_,Gets the hierarchy tree cache status details
     `Get-TririgaCacheMode <docs/Get-TririgaCacheMode.md>`_,Gets the cache processing mode
     `Set-TririgaCacheMode <docs/Set-TririgaCacheMode.md>`_,Sets the cache processing mode
+    `Set-TririgaCredential <docs/Set-TririgaCredential.md>`_,Stores credential in an encrypted file
     `Get-TririgaDatabase <docs/Get-TririgaDatabase.md>`_,Gets the database environment information
     `Clear-TririgaDatabaseAll <docs/Clear-TririgaDatabaseAll.md>`_,Runs a full database cleanup
     `Get-TririgaDatabaseSpace <docs/Get-TririgaDatabaseSpace.md>`_,Gets the database space information
