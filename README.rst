@@ -102,8 +102,8 @@ Installation
     #. Open a PowerShell window in the same directory as the zip file
     #. Run::
 
-            Unblock-File tririga-manage-ps1-4.6.0.zip
-            Expand-Archive tririga-manage-ps1-4.6.0.zip -DestinationPath .
+            Unblock-File tririga-manage-ps1-5.1.0.zip
+            Expand-Archive tririga-manage-ps1-5.1.0.zip -DestinationPath .
             .\tririga-manage-ps1\Install.ps1
 
     If you are using *PowerShell 5.1*, some methods may not trigger automatic loading

@@ -1,6 +1,11 @@
 Change Log
 ==========
 
+v5.1.0
+------
+* Fix issue with collecting and storing encrypted credentials on some systems
+  with Windows PowerShell 5.1
+
 v5.0.0
 ------
 * Markdown documentation is now generated for each command and can be `browsed

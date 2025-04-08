@@ -25,7 +25,9 @@ function Set-Credential() {
         [Parameter(Mandatory, Position=0)]
         [string]$environment,
         [Parameter(Mandatory, Position=1)]
-        [string]$username
+        [string]$username,
+        [Parameter(Mandatory, Position=2)]
+        [string]$password
     )
 
     $PasswordDir = "$env:LocalAppData\Tririga-Manage"
@@ -33,7 +35,15 @@ function Set-Credential() {
 
     New-Item -Type Directory -Path $PasswordDir -Force | Out-Null
 
-    $credential = Get-Credential -UserName $Username
+    $credential = $null
+
+    if($PSVersionTable.PSVersion.Major -gt 5) {
+        $credential = Get-Credential -UserName $Username
+    } else {
+        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+        $credential = [PSCredential]::New($username, $securePassword)
+    }
+
     $securePasswordPath = $PasswordFile
     $credential |  Export-Clixml -Path $PasswordFile
 
@@ -370,6 +380,14 @@ function CallTririgaApi() {
 
     $tririgaCredential = _GetCredential $environment
 
+    $passwordPlain = ""
+
+    if($PSVersionTable.PSVersion.Major -gt 5) {
+        $passwordPlain = (ConvertFrom-SecureString $tririgaCredential.password -AsPlainText)
+    } else {
+        $passwordPlain = ([System.Net.NetworkCredential]::new("", $tririgaCredential.password).Password)
+    }
+
     if (!$tririgaEnvironment) {
         Write-Error "The environment `"$environment`" was not found."
         Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
@@ -398,21 +416,11 @@ function CallTririgaApi() {
             return $null
         }
 
-        if (!$tririgaEnvironment.username) {
-            Write-Error "Username property is not set for $environment environment"
-            return $null
-        }
-
-        if (!$tririgaEnvironment.password) {
-            Write-Error "Password property is not set for $environment environment"
-            return $null
-        }
-
         $targetLabelInst = "$environment/$inst"
         if ($targetLabel) { $targetLabelInst = "$environment/$inst/$targetLabel" }
 
         if($doNotConfirm -or $PSCmdlet.ShouldProcess($targetLabelInst, $operationLabel)){
-            $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password (ConvertFrom-SecureString $tririgaCredential.password -AsPlainText)
+            $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password $passwordPlain
 
             # TODO: Only do this of the result is PSObject
             if (!$noTag) {

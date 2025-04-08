@@ -3,13 +3,9 @@
 PANDOC_BIN:=pandoc
 AWS_BIN=aws
 
-AWS_BUCKET=tririga-shared-files-np
+AWS_BUCKET?=tririga-shared-files-np
 
-NO_GIT_REMOTE_CHECK?=0
-
-NO_GITHUB_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
-NO_GITEA_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
-
+PROJECT:=tririga-manage-ps1
 VERSION:=$(shell sed -n "s/ModuleVersion = '\(.*\)'/\1/p" Tririga-Manage/Tririga-Manage.psd1)
 PSFILES:=$(shell find . \( -iname *.psd1 -or -iname *.psm1 \) -and ! -path "*dist/*")
 
@@ -19,6 +15,11 @@ DISTROOT:=dist
 DISTBASE:=tririga-manage-ps1
 DISTDIR:=$(DISTROOT)/$(DISTBASE)
 DISTZIP:=tririga-manage-ps1-$(VERSION).zip
+
+NO_GIT_REMOTE_CHECK?=0
+
+NO_GITHUB_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
+NO_GITEA_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
 
 # These flags allow us to enable/disable Github and Gitea remote release separately.
 ENABLE_GITHUB_RELEASE?=1
@@ -38,8 +39,7 @@ endif
 
 DIST_EXTRAS:=Install.ps1 environments.sample.psd1 README.rst ChangeLog.rst README.docx ChangeLog.docx
 
-.INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv Tririga-Manage.processed.csv Tririga-Manage-Rest.processed.csv Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp \
-	all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md environments.sample.psd1.tmp 
+.INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv Tririga-Manage.processed.csv Tririga-Manage-Rest.processed.csv Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md environments.sample.psd1.tmp
 
 # Extract a changelog for a specific version from ChangeLog.rst
 # cargo install markdown-extract
