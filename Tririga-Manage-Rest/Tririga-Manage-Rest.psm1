@@ -351,10 +351,11 @@ function CallTririgaApiRaw() {
         return $response
     } catch {
         if ($_.Exception.Response.StatusCode.value__ -eq 401) {
-            Write-Error "Got HTTP 401 (unauthorized) error. Your session for $serverUrlBase may have expired. It has been reset. Please Try again."
+            Write-Warning "Got HTTP 401 (unauthorized) error. Your session for $serverUrlBase may have expired. It has been reset. The API call will be retried."
             $tririgaSessionTable[$serverUrlBase] = $null
             $tririgaSession = $null
         }
+        throw
     }
 }
 
@@ -420,7 +421,14 @@ function CallTririgaApi() {
         if ($targetLabel) { $targetLabelInst = "$environment/$inst/$targetLabel" }
 
         if($doNotConfirm -or $PSCmdlet.ShouldProcess($targetLabelInst, $operationLabel)){
-            $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password $passwordPlain
+            try {
+                $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password $passwordPlain
+            } catch {
+                if ($_.Excepti..on.Response.StatusCode.value__ -eq 401) {
+                    # Retry call on exception (usually 401)
+                    $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password $passwordPlain
+                }
+            }
 
             # TODO: Only do this of the result is PSObject
             if (!$noTag) {
