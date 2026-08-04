@@ -43,13 +43,13 @@
                 ObjectMigrationAgent = $true
             };
             # Repeat for all other servers/instances
-            "TWO" = @{
-                # ...
-            };
+            #"TWO" = @{
+            #    # ...
+            #};
         }
     };
     # Repeat for all other environments
-    "REMOTE" = @{
-        # ...
-    };
+    #"REMOTE" = @{
+    #    # ...
+    #};
 }

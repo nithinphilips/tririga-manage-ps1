@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+v5.2.0
+------
+* Remove invalid configuration from sample environment file. It is now ready
+  for use with a local instance.
+* Rest: If session is expired, automatically invalidate and attempt to login again.
+* Support for WLP: ``Open-WlpFolder``, ``Get-WlpLog``, ``Open-WlpLog``
+* Add command to open RDP to database: ``Open-RDPDatabase``.
+  This requires that a key "DbHost" is set for each environment.
+
 v5.1.0
 ------
 * Fix issue with collecting and storing encrypted credentials on some systems
@@ -86,7 +95,7 @@ v4.2.0
 v4.1.0
 ------
 * Remove support for environment variables because the validation did not
-  work 
+  work
 * Rationalize ``Install.ps``
 
   * No arguments will install module to current profile and update profile
@@ -132,7 +141,7 @@ v4.0.0
 * New packaging and distribution process.
 * The environment configuration file is now loated in the same folder as the
   PowerShell ``$Profile``.
-* The ``Install.ps1`` script will place a sample ``environment.ps1`` at the new 
+* The ``Install.ps1`` script will place a sample ``environment.ps1`` at the new
   location if one already does not exist.
 
 v3.0.0

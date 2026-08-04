@@ -3,6 +3,13 @@ Developer README
 
 Development
 -----------
+Install dev dependencies::
+
+    Install-Module Pester -Force
+    Import-Module Pester -PassThru
+    Install-Module PSScriptAnalyzer -Force
+    Import-Module PSScriptAnalyzer -PassThru
+
 To load the module from the project directory:
 
 .. code:: ps1

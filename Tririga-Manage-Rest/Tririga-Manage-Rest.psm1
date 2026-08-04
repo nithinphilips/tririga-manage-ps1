@@ -351,7 +351,7 @@ function CallTririgaApiRaw() {
         return $response
     } catch {
         if ($_.Exception.Response.StatusCode.value__ -eq 401) {
-            Write-Warning "Got HTTP 401 (unauthorized) error. Your session for $serverUrlBase may have expired. It has been reset. The API call will be retried."
+            Write-Verbose "Got HTTP 401 (unauthorized) error. Your session for $serverUrlBase may have expired. It has been reset. The API call will be retried."
             $tririgaSessionTable[$serverUrlBase] = $null
             $tririgaSession = $null
         }
@@ -424,15 +424,20 @@ function CallTririgaApi() {
             try {
                 $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password $passwordPlain
             } catch {
-                if ($_.Excepti..on.Response.StatusCode.value__ -eq 401) {
-                    # Retry call on exception (usually 401)
-                    $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password $passwordPlain
+                if ($_.Exception.Response.StatusCode.value__ -eq 401) {
+                    try {
+                        # Retry call on exception (usually 401)
+                        $result = CallTririgaApiRaw -serverUrlBase $hostUrl -apiMethod $apiMethod -apiPath $apiPath -apiBody $apiBody -username $tririgaCredential.username -password $passwordPlain
+                    } catch {
+                        # Second failure = probably bad password
+                        Write-Error "Got HTTP 401 (unauthorized) error. Your credentials may be invalid."
+                    }
                 }
             }
 
             # TODO: Only do this of the result is PSObject
-            if (!$noTag) {
-                $result = $result | Add-Member -PassThru environment $environment | Add-Member -PassThru instance $inst
+            if (!$noTag -and $result) {
+                $result = $result | Add-Member -Force -PassThru environment $environment | Add-Member -Force -PassThru instance $inst
             }
 
             # Yield Result
@@ -752,7 +757,7 @@ function Get-Property() {
         ApiPath = "/api/v1/admin/systemInfo/properties/list?f=$fileEscaped"
     }
 
-    $result = CallTririgaApi @apiCall | Add-Member -PassThru "file" $file
+    $result = CallTririgaApi @apiCall | Add-Member -Force -PassThru "file" $file
 
     if ($property) {
         $propertyFilter = @("environment", "instance", "file") + $property
@@ -893,7 +898,7 @@ function Set-Property() {
             OperationLabel = "Set Property [$properties]"
         }
 
-        CallTririgaApi @apiCall | Add-Member -PassThru "file" $file | Select-Object $propertyFilter
+        CallTririgaApi @apiCall | Add-Member -Force -PassThru "file" $file | Select-Object $propertyFilter
     }
 }
 
@@ -1639,8 +1644,13 @@ Enables TRIRIGA platform Logging for the given categories
 Enables TRIRIGA platform Logging for the given categories
 
 1. To see available log categories, run:
-        Get-TririgaPlatformLogging <ENV> -Level 1 | Select-Object description
+
+   ```
+   Get-TririgaPlatformLogging <ENV> -Level 1 | Select-Object description
+   ```
+
    Increase level to see sub categories
+
 2. The -Category argument is the "description" of Get-TririgaPlatformLogging output .
    If you are looking in the TRIRIGA Admin Console, it is the name of the category that you see there.
 3. Multiple categories can be given. See examples.
@@ -1684,7 +1694,7 @@ function Enable-PlatformLogging() {
             OperationLabel = "Enable Logging"
         }
 
-        CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+        CallTririgaApi @apiCall | Add-Member -Force -PassThru category $categoryObject.Description
     }
 }
 
@@ -1749,7 +1759,7 @@ function Disable-PlatformLogging() {
             TargetLabel = $categoryObject.Description
         }
 
-        CallTririgaApi @apiCall | Add-Member -PassThru category $categoryObject.Description
+        CallTririgaApi @apiCall | Add-Member -Force -PassThru category $categoryObject.Description
     }
 }
 

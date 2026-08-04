@@ -16,38 +16,16 @@ DISTBASE:=tririga-manage-ps1
 DISTDIR:=$(DISTROOT)/$(DISTBASE)
 DISTZIP:=tririga-manage-ps1-$(VERSION).zip
 
-NO_GIT_REMOTE_CHECK?=0
-
-NO_GITHUB_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
-NO_GITEA_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
-
-# These flags allow us to enable/disable Github and Gitea remote release separately.
-ENABLE_GITHUB_RELEASE?=1
-ENABLE_GITEA_RELEASE?=1
-
-GITHUB_REMOTE_NAME:=origin
-GITEA_REMOTE_NAME:=gitea
-
-# If a repository remote is disabled, always skip remote tag check
-ifeq ($(ENABLE_GITHUB_RELEASE), 0)
- NO_GITHUB_REMOTE_CHECK:=1
-endif
-
-ifeq ($(ENABLE_GITEA_RELEASE), 0)
- NO_GITEA_REMOTE_CHECK:=1
-endif
-
 DIST_EXTRAS:=Install.ps1 environments.sample.psd1 README.rst ChangeLog.rst README.docx ChangeLog.docx
 
+RELEASE_DIST_FILES:=$(DISTROOT)/$(DISTZIP)
+RELEASE_DIST_DEP:=update-module dist
+RELEASE_DEPS:=publish-psgallery
+RELEASE_GITEA_DEPS:=publish-gitea
+RELEASE_CHECK_DEPS:=code-check
+include Release.mk
+
 .INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv Tririga-Manage.processed.csv Tririga-Manage-Rest.processed.csv Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md environments.sample.psd1.tmp
-
-# Extract a changelog for a specific version from ChangeLog.rst
-# cargo install markdown-extract
-ChangeLog.%.md: ChangeLog.md
-	markdown-extract $* $< | sed 1d > $@
-
-%.md: %.rst
-	pandoc --from=rst --to=markdown --columns=99999 -o $@ $<
 
 %.docx: %.rst
 	$(PANDOC_BIN) -t docx -o $@ $<
@@ -105,51 +83,6 @@ update-readme: update-module Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp 
 
 dist: $(DISTROOT)/$(DISTZIP)
 
-git-tag:
-	git tag v$(VERSION)
-
-release-check: code-check
-	# Check if repo is clean
-	#git diff-index --quiet HEAD -- || (echo "You have uncommited changes. Commit them before release."; exit 1) && (printf "\e[1;38:5:40m✓\e[0m No uncommited changes\n")
-	# Check if a ChangeLog entry exists
-	test $(shell grep -c '^$(GIT_TAG)' ChangeLog.rst) -eq 1 || (echo "Error: Please add a change log entry for release $(GIT_TAG) before releasing"; exit 1) && (printf "\e[1;38:5:40m✓\e[0m ChangeLog entry exists for release $(GIT_TAG)\n")
-	# Check if the tag exists in the local repo
-	test $(shell git tag -l | grep -x -c -F "$(GIT_TAG)") -eq 1 || ( echo "The tag $(GIT_TAG) does not exit in this repository. Tag your release first. Run: make git-tag"; exit 1 ) && (printf "\e[1;38:5:40m✓\e[0m Git Tag exists for release $(GIT_TAG)\n")
-	# Check if the tag exists in the remote repo
-	# git ls-remote will open a connection to the remote repository!
-	if [ $(NO_GITHUB_REMOTE_CHECK) -eq 0 ]; then \
-			if [ $$(git ls-remote --tags $(GITHUB_REMOTE_NAME) | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
-				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to $(GITHUB_REMOTE_NAME)\n"; \
-			else \
-				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to $(GITHUB_REMOTE_NAME). Push your tags first by running: git push --tags\n"; \
-				exit 1; \
-			fi \
-	else \
-		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to $(GITHUB_REMOTE_NAME) because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
-	fi
-	if [ $(NO_GITEA_REMOTE_CHECK) -eq 0 ]; then \
-			if [ $$(git ls-remote --tags $(GITEA_REMOTE_NAME) | grep -c "refs/tags/$(GIT_TAG)$$") -eq 1 ]; then \
-				printf "\e[1;38:5:40m✓\e[0m Tag $(GIT_TAG) has been pushed to $(GITEA_REMOTE_NAME)\n"; \
-			else \
-				printf "\e[1;38:5:196m✕\e[0m Tag $(GIT_TAG) has not been pushed to $(GITEA_REMOTE_NAME). Push your tags first by running: git push $(GITEA_REMOTE_NAME) --tags \n"; \
-				exit 1; \
-			fi \
-	else \
-		printf "\e[1;38:5:190m?\e[0m Not checking if tag $(GIT_TAG) has been pushed to $(GITEA_REMOTE_NAME) because NO_GIT_REMOTE_CHECK is set to $(NO_GIT_REMOTE_CHECK)\n"; \
-	fi
-
-release-github: update-module dist ChangeLog.$(GIT_TAG).md release-check
-	(gh release create $(GIT_TAG) -F ChangeLog.$(GIT_TAG).md $(DISTROOT)/$(DISTZIP) && printf "\e[1;38:5:40m✓\e[0m Github release $(GIT_TAG) created\n" || printf "\e[1;38:5:190m✓\e[0m Github release $(GIT_TAG) exists\n")
-
-release-gitea: update-module dist ChangeLog.$(GIT_TAG).md release-check
-	# This uses my version of tea. If it gets upgraded, it may lose the --note-file flag
-	# 'tea release create' may fail with exit code 1 if release already exists, but that's OK.
-	(tea release create --repo nithin/tririga-manage-ps1 --note-file ChangeLog.$(GIT_TAG).md --tag $(GIT_TAG) --title $(GIT_TAG) && printf "\e[1;38:5:40m✓\e[0m Release $(GIT_TAG) created\n" || printf "\e[1;38:5:190m✓\e[0m Release $(GIT_TAG) exists\n")
-	# Remove existing file if you're re-releasing
-	#-tea release assets delete --confirm $(GIT_TAG) $(NATIVE_DISTZIP)
-	tea release assets create --repo nithin/tririga-manage-ps1 $(GIT_TAG) $(DISTROOT)/$(DISTZIP)
-	printf "\e[1;38:5:40m✓\e[0m Uploaded file $(DISTZIP) to release $(GIT_TAG)\n"
-
 publish-gitea: update-module
 	pwsh Install.ps1 -Publish -NoInstallModule -NuGetApiKey $(GITEA_API_TOKEN)
 	printf "\e[1;38:5:40m✓\e[0m Published package to Gitea NuGet repository\n"
@@ -164,21 +97,6 @@ check: update-module
 code-check:
 	pwsh -Command "Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage | ft -AutoSize; Invoke-ScriptAnalyzer -Recurse -Path Tririga-Manage-Rest | ft -AutoSize"
 
-# Dynamically set release dependencies depending on which remotes are enabled
-RELEASE_DEPS:=
-
-ifeq ($(ENABLE_GITHUB_RELEASE),1)
- RELEASE_DEPS:=$(RELEASE_DEPS) release-github
-endif
-
-ifeq ($(ENABLE_GITEA_RELEASE),1)
- RELEASE_DEPS:=$(RELEASE_DEPS) release-gitea publish-gitea
-endif
-
-release: $(RELEASE_DEPS) publish-psgallery ## Releases to remotes and galleries
-
-publish-aws: dist # Published the dist file to Amazon AWS
-	aws s3 cp "$(DISTROOT)/$(DISTZIP)" s3://$(AWS_BUCKET) --acl=public-read && echo "OMP Published to: https://$(AWS_BUCKET).s3.amazonaws.com/$(DISTZIP)"
 
 help: ## This help dialog.
 	@IFS=$$'\n' ; \

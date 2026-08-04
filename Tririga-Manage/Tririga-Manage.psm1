@@ -162,6 +162,35 @@ function GetWasLogName($log) {
     }
 }
 
+function GetWlpLogName($log) {
+    $LogLookup = @{
+        ''         = "messages.log";
+        'messages' = "messages.log";
+        'out'      = "console.log";
+        'trace'    = "trace.log";
+    }
+
+    if($LogLookup.ContainsKey($log)){
+        return $LogLookup[$log]
+    } else {
+        return $log
+    }
+}
+
+function GetWlpTririgaProfileRoot($tririgaRoot) {
+    $wlpRoot = Join-Path -Path $tririgaRoot -ChildPath "wlp"
+    $wlpUsrRoot = Join-Path -Path $wlpRoot -ChildPath "usr"
+    $wlpServerRoot = Join-Path -Path $wlpUsrRoot -ChildPath "servers"
+    $wlpTririgaProfileRoot = Join-Path -Path $wlpServerRoot -ChildPath "tririgaServer"
+    return $wlpTririgaProfileRoot
+}
+
+function GetWlpLogRoot($tririgaRoot) {
+    $wlpTririgaProfileRoot = GetWlpTririgaProfileRoot $tririgaRoot
+    $wlpLogRoot = Join-Path -Path $wlpTririgaProfileRoot -ChildPath "logs"
+    return $wlpLogRoot
+}
+
 function HandleOmp() {
     [CmdletBinding(SupportsShouldProcess)]
     param(
@@ -225,6 +254,7 @@ function Initialize-Configuration() {
         if (!(Test-Path -Path $environmentsFile)) {
             Get-Content $EnvironmentSampleLocation | Out-File $environmentsFile
             Write-Host "A sample environments file has been placed at $environmentsFile. Edit to customize"
+            Write-Host "If you are using the Tririga-Manage-Rest module, run Set-TririgaCredential <environment> to set API credentials"
         }
 
         Write-Host "Configuring your PowerShell profile $Profile"
@@ -353,7 +383,7 @@ function Get-Service() {
             $uptime = GetServiceUptime -TririgaHost $tririgaHost -Name $service
 
             if ($raw) {
-                @{ 
+                @{
                     environment = $tririgaEnvName
                     instance =$tririgaInstName
                     service = $serviceInfo
@@ -866,6 +896,28 @@ function Open-RDP() {
 
 <#
 .SYNOPSIS
+Opens an RDP client connection to the TRIRIGA Database server
+.DESCRIPTION
+Launches the Microsoft Remote Desktop Connection tool with the database server name pre-filled.
+#>
+function Open-RDPDatabase() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment
+    )
+
+    $tririgaEnvironment = (GetConfiguration)[$environment]
+    $databaseHost = $tririgaEnvironment["DbHost"]
+
+    Start-Process "$env:windir\system32\mstsc.exe" -ArgumentList "/v:$($databaseHost)"
+}
+
+<#
+.SYNOPSIS
 Opens a TRIRIGA installation directory path
 .DESCRIPTION
 Opens a TRIRIGA installation directory path in your default file browser application
@@ -1075,6 +1127,113 @@ function Open-WasLog() {
         ForEach($inst in $instances) {
             $wasRoot = GetUncPath -server $inst["Host"] -path $inst["WebSphere"]
             $logPath = Join-Path -Path $wasRoot -ChildPath (GetWasLogName $log)
+            Invoke-Item $logPath
+        }
+    }
+}
+
+#-------------------
+
+<#
+.SYNOPSIS
+Opens a WebSphere Liberty profile path
+.DESCRIPTION
+Opens a WebSphere Liberty profile path in your default file browser application
+#>
+function Open-WlpFolder() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
+            $wlpRoot = GetWlpTririgaProfileRoot $tririgaRoot
+            Invoke-Item $wlpRoot
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Tails a WebSphere Liberty log file
+.DESCRIPTION
+Tails a WebSphere Liberty log file in the console
+#>
+function Get-WlpLog() {
+    [Alias("Tail-WlpLog")]
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # The log file to view. Default is SystemOut.log. Possible values are: out, err or the exact log file name
+        [string]$log = $null,
+        # The initial number of lines to tail.
+        [int]$tail = 10
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
+            $wlpLogRoot = GetWlpLogRoot $tririgaRoot
+            $logPath = Join-Path -Path $wlpLogRoot -ChildPath (GetWlpLogName $log)
+            Get-Content -Tail $tail -Wait $logPath
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Opens a WebSphere Liberty log file
+.DESCRIPTION
+Opens a WebSphere Liberty log file in the default viewer
+#>
+function Open-WlpLog() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will act on all instances.
+        [Alias("Inst", "I")]
+        [Parameter(Position=1)]
+        [string]$instance,
+        # The log file to view. Default is messages.log. Possible values are: messages, out, trace or the exact log file name
+        [string]$log = $null
+    )
+
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+
+    if ($instances) {
+        ForEach($inst in $instances) {
+            $tririgaRoot = GetUncPath -server $inst["Host"] -path $inst["Tririga"]
+            $wlpLogRoot = GetWlpLogRoot $tririgaRoot
+            $logPath = Join-Path -Path $wlpLogRoot -ChildPath (GetWlpLogName $log)
             Invoke-Item $logPath
         }
     }

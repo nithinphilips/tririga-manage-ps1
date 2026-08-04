@@ -146,6 +146,7 @@ the ``$DBeaverBin`` variable with the path to the ``dbeaver.exe`` file.
                 Warn = $False;
                 # The DBeaver profile associated with this environment
                 DbProfile = "Tririga Local";
+                DbHost = "localhost";
                 #
                 # Username and Password (non-SSO) for use with the REST api calls is
                 # stored encrypted. Run ``Set-TririgaCredential`` command to store it.
@@ -481,6 +482,7 @@ The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
     `Import-TririgaOmp <docs/Import-TririgaOmp.md>`_,Uploads and imports a local OMP zip file to TRIRIGA
     `Save-TririgaOmp <docs/Save-TririgaOmp.md>`_,Uploads a local OMP zip file to TRIRIGA
     `Open-TririgaRDP <docs/Open-TririgaRDP.md>`_,Opens an RDP client connection to the TRIRIGA server
+    `Open-TririgaRDPDatabase <docs/Open-TririgaRDPDatabase.md>`_,Opens an RDP client connection to the TRIRIGA Database server
     `Disable-TririgaService <docs/Disable-TririgaService.md>`_,Disables TRIRIGA service
     `Enable-TririgaService <docs/Enable-TririgaService.md>`_,Enables TRIRIGA service
     `Get-TririgaService <docs/Get-TririgaService.md>`_,Get the current status of TRIRIGA service
@@ -492,6 +494,9 @@ The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
     `Open-TririgaWasLog <docs/Open-TririgaWasLog.md>`_,Opens a WebSphere log file
     `Open-TririgaWasWeb <docs/Open-TririgaWasWeb.md>`_,Opens the WebSphere Admin Console
     `Open-TririgaWeb <docs/Open-TririgaWeb.md>`_,Opens a TRIRIGA environment
+    `Open-TririgaWlpFolder <docs/Open-TririgaWlpFolder.md>`_,Opens a WebSphere Liberty profile path
+    `Get-TririgaWlpLog <docs/Get-TririgaWlpLog.md>`_,Tails a WebSphere Liberty log file
+    `Open-TririgaWlpLog <docs/Open-TririgaWlpLog.md>`_,Opens a WebSphere Liberty log file
 .. ##END TABLE TRIRIGA MANAGE
 
 Tririga-Manage-Rest Module
