@@ -46,7 +46,7 @@ ARG gh_version tea_version mlr_version TARGETARCH
 
 # Install build deps
 RUN apt-get update && \
-    apt-get install -y unzip curl make xmlstarlet pandoc wget curl git zip unzip build-essential zlib1g-dev ca-certificates gawk dos2unix && \
+    apt-get install -y unzip curl make xmlstarlet pandoc wget curl git zip unzip build-essential zlib1g-dev ca-certificates gawk dos2unix vim && \
     apt-get clean
 
 # Tools for Release-mk (https://gitea.sterling.nithinphilips.com/nithin/release-mk#requirements)
@@ -64,6 +64,7 @@ RUN /opt/aws/install
 # Install tririga-manage-ps1 build dependencies
 ADD https://github.com/johnkerl/miller/releases/download/v${mlr_version}/miller-${mlr_version}-linux-${TARGETARCH}.deb /tmp/miller-${mlr_version}-linux-${TARGETARCH}.deb
 RUN dpkg -i /tmp/miller-${mlr_version}-linux-${TARGETARCH}.deb
+RUN pwsh -Command "Install-Module Pester -Force; Install-Module PSScriptAnalyzer -Force;"
 
 # Install Step CLI and nithinphilips.com root CA
 ADD https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_${TARGETARCH}.deb /tmp/step-cli_${TARGETARCH}.deb

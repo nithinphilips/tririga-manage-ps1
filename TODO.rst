@@ -2,16 +2,15 @@ TODO
 ====
 
 
-Install Flow:
+Install Flow::
 
-Install-Module Tririga-Manage -Scope CurrentUser
-Install-Module Tririga-Manage-Rest -Scope CurrentUser
-
-Initialize-TririgaConfiguration
+    Install-Module Tririga-Manage -Scope CurrentUser
+    Install-Module Tririga-Manage-Rest -Scope CurrentUser
+    Initialize-TririgaConfiguration
 
 Security
 
-- [ ] Store password in secure format::
+- [x] Store password in secure format::
 
         PS> Set-TririgaCredential DEV -Username nithin -Password blah
 
@@ -22,9 +21,10 @@ Security
 
   https://www.techtarget.com/searchitoperations/tutorial/How-to-secure-passwords-with-PowerShell
 
-  Maybe do this in Profile using a Command
+  Maybe do this in Profile using a Command::
 
-  $TririgaEnvironment = Load-TririgaConfiguration "abc.psd1"
+      $TririgaEnvironment = Load-TririgaConfiguration "abc.psd1"
+
   > environments to variable
   > Load passwords and attach it to the environments variable
   > Password is still a secure string

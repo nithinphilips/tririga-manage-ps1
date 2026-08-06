@@ -472,9 +472,11 @@ The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
     Name,Synopsis
     `Initialize-TririgaConfiguration <docs/Initialize-TririgaConfiguration.md>`_,Initialize-TririgaConfiguration [<CommonParameters>]
     `Open-TririgaDatabase <docs/Open-TririgaDatabase.md>`_,Opens Dbeaver and connects to the TRIRIGA database
+    `Get-TririgaDatabaseHost <docs/Get-TririgaDatabaseHost.md>`_,Gets the name of the database host for an environment
     `Get-TririgaEnvironment <docs/Get-TririgaEnvironment.md>`_,Gets all known environments
     `Open-TririgaFolder <docs/Open-TririgaFolder.md>`_,Opens a TRIRIGA installation directory path
     `Enter-TririgaHost <docs/Enter-TririgaHost.md>`_,Starts a remote powershell session to a TRIRIGA instance
+    `Enter-TririgaHostDb <docs/Enter-TririgaHostDb.md>`_,Starts a remote powershell session to a TRIRIGA database server
     `Get-TririgaInstance <docs/Get-TririgaInstance.md>`_,Gets all known instances in a given environment
     `Get-TririgaLog <docs/Get-TririgaLog.md>`_,Tails a TRIRIGA log file
     `Open-TririgaLog <docs/Open-TririgaLog.md>`_,Opens a TRIRIGA log file
@@ -482,13 +484,14 @@ The Tririga-Manage module operates on TRIRIGA installation on a Windows server.
     `Import-TririgaOmp <docs/Import-TririgaOmp.md>`_,Uploads and imports a local OMP zip file to TRIRIGA
     `Save-TririgaOmp <docs/Save-TririgaOmp.md>`_,Uploads a local OMP zip file to TRIRIGA
     `Open-TririgaRDP <docs/Open-TririgaRDP.md>`_,Opens an RDP client connection to the TRIRIGA server
-    `Open-TririgaRDPDatabase <docs/Open-TririgaRDPDatabase.md>`_,Opens an RDP client connection to the TRIRIGA Database server
+    `Open-TririgaRDPDb <docs/Open-TririgaRDPDb.md>`_,Opens an RDP client connection to the TRIRIGA Database server
     `Disable-TririgaService <docs/Disable-TririgaService.md>`_,Disables TRIRIGA service
     `Enable-TririgaService <docs/Enable-TririgaService.md>`_,Enables TRIRIGA service
     `Get-TririgaService <docs/Get-TririgaService.md>`_,Get the current status of TRIRIGA service
     `Restart-TririgaService <docs/Restart-TririgaService.md>`_,Restarts TRIRIGA service
     `Start-TririgaService <docs/Start-TririgaService.md>`_,Starts TRIRIGA service
     `Stop-TririgaService <docs/Stop-TririgaService.md>`_,Stops TRIRIGA service
+    `Get-TririgaServiceMssql <docs/Get-TririgaServiceMssql.md>`_,Get the current status of TRIRIGA SQL Server database service
     `Open-TririgaWasFolder <docs/Open-TririgaWasFolder.md>`_,Opens a WebSphere profile path
     `Get-TririgaWasLog <docs/Get-TririgaWasLog.md>`_,Tails a WebSphere log file
     `Open-TririgaWasLog <docs/Open-TririgaWasLog.md>`_,Opens a WebSphere log file

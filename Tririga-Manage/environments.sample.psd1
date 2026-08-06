@@ -9,6 +9,7 @@
         Warn = $False;
         # The DBeaver profile associated with this environment
         DbProfile = "Tririga Local";
+        DbHost = "localhost";
         #
         # Username and Password (non-SSO) for use with the REST api calls is
         # stored encrypted. Run ``Set-TririgaCredential`` command to store it.

@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 param(
-    [string]$version="5.2.0",
+    [string]$version="5.3.0",
     [switch]$updateModule,
     [switch]$noInstallModule,
     [switch]$publish,
@@ -8,6 +8,12 @@ param(
     [string]$nuGetApiKey,
     [string]$releaseNoteFile
 )
+
+#
+# This script will install the modules to your PowerShell user module
+# directory and configure your profile startup to load the environment
+# configuration
+#
 
 $modules = @("Tririga-Manage", "Tririga-Manage-Rest")
 

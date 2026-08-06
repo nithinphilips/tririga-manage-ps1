@@ -30,6 +30,29 @@ To run tests:
 
     make check
 
+Develop Using the Container
+---------------------------
+Container based development is only tested on Linux.
+
+Build the container::
+
+    podman build --platform linux/amd64 -t tririga-manage-ps1-dev .
+
+Start container::
+
+    podman run --network host -v .:/workspace -it tririga-manage-ps1-dev
+
+Initialize::
+
+    . ./SetupDev.ps1
+    Initialize-TririgaConfiguration
+    . ~/.config/powershell/Microsoft.PowerShell_profile.ps1
+    Set-TririgaCredential LOCAL -Username system -Password badadmin
+
+Verify::
+
+    Get-TririgaEnvironment
+    Get-TririgaAgent LOCAL
 
 Parameter Handling
 ------------------

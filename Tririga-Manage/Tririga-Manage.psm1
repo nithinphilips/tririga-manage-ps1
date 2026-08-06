@@ -276,15 +276,19 @@ Gets a list of all known environment
 #>
 function Get-Environment() {
     [CmdletBinding()]
+    [Alias("Get-Environments")]
     param(
-        # If set, the object is returned as-is.
-        [switch]$raw = $false
+        # The TRIRIGA environment to use.
+        # If omitted all environments and instances will be printed.
+        [Parameter(Position=0)]
+        [Alias("Env", "E")]
+        [string]$environment
     )
 
-    if($raw) {
-        (GetConfiguration)
+    if ($environment) {
+        (GetConfiguration)[$environment]
     } else {
-        Write-Output "Known environments are: $(((GetConfiguration).keys) -join ', ')"
+        (GetConfiguration)
     }
 }
 
@@ -296,6 +300,7 @@ Gets a list of all known instances in a given environment
 #>
 function Get-Instance() {
     [CmdletBinding()]
+    [Alias("Get-Instances")]
     param(
         # The TRIRIGA environment to use.
         # If omitted all environments and instances will be printed.
@@ -303,28 +308,15 @@ function Get-Instance() {
         [ValidateNotNullOrEmpty()]
         [Alias("Env", "E")]
         [string]$environment,
-        # If set, the object is returned as-is.
-        [switch]$raw = $false
+        # The TRIRIGA instance within the environment to use.
+        # If omitted, command will list all instances
+        [Parameter(Position=1)]
+        [Alias("Inst", "I")]
+        [string]$instance
     )
 
-    $tririgaEnvironment = (GetConfiguration)[$environment]
-
-    if ($tririgaEnvironment) {
-        if ($raw) {
-            $tririgaEnvironment
-        } else {
-            Write-Output "$environment environment: $(($tririgaEnvironment.Servers.keys) -join ', ')"
-        }
-    } else {
-        if($raw) {
-            (GetConfiguration)
-        } else {
-            ForEach($env in (GetConfiguration).keys) {
-                $envItem = (GetConfiguration)[$env]
-                Write-Output "$env environment: $(($envItem.Servers.keys) -join ', ')"
-            }
-        }
-    }
+    $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
+    $instances
 }
 
 <#
@@ -365,7 +357,7 @@ function Get-Service() {
                 $serviceDetails = (Get-CimInstance -ClassName Win32_Service | Where-Object Name -eq "$($using:service)")
                 $serviceProcess = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $($serviceDetails.ProcessId)"
                 return @([PSCustomObject]@{
-                    Service = Microsoft.PowerShell.Management\Get-Service "$($using:service)"
+                    Service = (Microsoft.PowerShell.Management\Get-Service "$($using:service)")
                     ServiceDetails = $serviceDetails
                     ProcessId = $serviceDetails.ProcessId
                     UpTime = ((Get-Date) - $serviceProcess.CreationDate)
@@ -374,12 +366,14 @@ function Get-Service() {
                     Memory = $serviceProcess.WorkingSetSize
                     ProcessStatus = $serviceProcess.Status
                     ProcessExecutionState = $serviceProcess.ExecutionState
-                    Drive = Get-PSDrive -PSProvider FileSystem
+                    Drive = (Get-PSDrive -PSProvider FileSystem)
                 })
             }
 
-            $serviceInfo = $remoteInfo["Service"]
-            $diskInfo = $remoteInfo["Disk"]
+            Write-Verbose $remoteInfo
+
+            $serviceInfo = $remoteInfo.Service
+            $diskInfo = $remoteInfo.Drive
             $uptime = GetServiceUptime -TririgaHost $tririgaHost -Name $service
 
             if ($raw) {
@@ -435,6 +429,108 @@ function Get-Service() {
                 # Print $tail lines from server.log
                 Write-Host -ForegroundColor yellow "Tririga Log (last $tail lines)"
                 Get-Log -NoWait -Environment $tririgaEnvName -Instance $tririgaInstName -Tail $tail
+            }
+        }
+    }
+}
+
+<#
+.SYNOPSIS
+Get the current status of TRIRIGA SQL Server database service
+.DESCRIPTION
+Get the current status of TRIRIGA SQL Server database service
+#>
+function Get-ServiceMssql() {
+    [CmdletBinding()]
+    [Alias("Get-ServiceDb")]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment,
+        [switch]$raw
+    )
+
+    $tririgaEnvironment = (GetConfiguration)[$environment]
+    if (!$tririgaEnvironment) {
+        Write-Error "The environment `"$environment`" was not found."
+        Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
+        return
+    }
+
+    $tririgaEnvName = $environment
+    $tririgaHost = $tririgaEnvironment["DbHost"]
+    $service = "MSSQLSERVER"
+
+    $remoteInfo = Invoke-Command -ComputerName $tririgaHost -ScriptBlock {
+        $serviceDetails = (Get-CimInstance -ClassName Win32_Service | Where-Object Name -eq "$($using:service)")
+        $serviceProcess = Get-CimInstance -ClassName Win32_Process -Filter "ProcessId = $($serviceDetails.ProcessId)"
+        return @([PSCustomObject]@{
+            Service = (Microsoft.PowerShell.Management\Get-Service "$($using:service)")
+            ServiceDetails = $serviceDetails
+            ProcessId = $serviceDetails.ProcessId
+            UpTime = ((Get-Date) - $serviceProcess.CreationDate)
+            CommandLine = $serviceProcess.CommandLine
+            ExecutablePath = $serviceProcess.ExecutablePath
+            Memory = $serviceProcess.WorkingSetSize
+            ProcessStatus = $serviceProcess.Status
+            ProcessExecutionState = $serviceProcess.ExecutionState
+            Drive = (Get-PSDrive -PSProvider FileSystem)
+        })
+    }
+
+    Write-Verbose $remoteInfo
+
+    $serviceInfo = $remoteInfo.Service
+    $diskInfo = $remoteInfo.Drive
+    $uptime = GetServiceUptime -TririgaHost $tririgaHost -Name $service
+
+    if ($raw) {
+        @{
+            environment = $tririgaEnvName
+            service = $serviceInfo
+            disk = $diskInfo
+            uptime = $uptime
+        }
+    } else {
+        Write-Host -ForegroundColor black -BackgroundColor white "$tririgaEnvName Database"
+
+        # Color code status and start type
+        $statusColor = "red"
+        if ($serviceInfo.Status -eq "Running") {
+            $statusColor = "green"
+        }
+
+        $startColor = "red"
+        if ($serviceInfo.StartType -eq "Automatic") {
+            $startColor = "green"
+        }
+
+        Write-Host -NoNewLine -ForegroundColor yellow "  Name: "
+        Write-Host "$($serviceInfo.Name) ($($remoteInfo.ProcessId))"
+        Write-Host -NoNewLine -ForegroundColor yellow "Status: "
+        Write-Host -ForegroundColor $statusColor $serviceInfo.Status
+        Write-Host -NoNewLine -ForegroundColor yellow " Label: "
+        Write-Host $serviceInfo.DisplayName
+        Write-Host -NoNewLine -ForegroundColor yellow " Start: "
+        Write-Host -ForegroundColor $startColor $serviceInfo.StartType
+
+        Write-Host -NoNewLine -ForegroundColor yellow "Uptime: "
+        "{0:dd}d:{0:hh}h:{0:mm}m:{0:ss}s" -f $uptime
+
+        # Print free disk size
+        $diskInfo | ForEach-Object {
+            $total = $_.Used + $_.Free
+            if ($total -gt 0) {
+                Write-Host -NoNewLine -ForegroundColor yellow "  Disk: "
+                $percentUsed = [math]::Round($_.Used / $total * 100)
+                Write-Host -NoNewLine "$($_.Root) "
+                $diskColor = "white"
+                if ($percentUsed -ge 80) {
+                    $diskColor = "red"
+                }
+                Write-Host -ForegroundColor $diskColor "$percentUsed% Used"
             }
         }
     }
@@ -836,6 +932,34 @@ function Enter-Host() {
 
 <#
 .SYNOPSIS
+Starts a remote powershell session to a TRIRIGA database server
+.DESCRIPTION
+Starts a remote powershell session to a TRIRIGA database server using the Enter-PSSession command.
+.LINK
+https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/enter-pssession
+#>
+function Enter-HostDb() {
+    [CmdletBinding()]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment
+    )
+
+    $tririgaEnvironment = (GetConfiguration)[$environment]
+    if (!$tririgaEnvironment) {
+        Write-Error "The environment `"$environment`" was not found."
+        Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
+        return
+    }
+    $databaseHost = $tririgaEnvironment["DbHost"]
+    Enter-PSSession -ComputerName $databaseHost
+}
+
+<#
+.SYNOPSIS
 Opens a TRIRIGA environment
 .DESCRIPTION
 Opens the TRIRIGA environment URL in your default browser
@@ -900,7 +1024,7 @@ Opens an RDP client connection to the TRIRIGA Database server
 .DESCRIPTION
 Launches the Microsoft Remote Desktop Connection tool with the database server name pre-filled.
 #>
-function Open-RDPDatabase() {
+function Open-RDPDb() {
     [CmdletBinding()]
     param(
         # The TRIRIGA environment to use.
@@ -911,9 +1035,44 @@ function Open-RDPDatabase() {
     )
 
     $tririgaEnvironment = (GetConfiguration)[$environment]
+    if (!$tririgaEnvironment) {
+        Write-Error "The environment `"$environment`" was not found."
+        Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
+        return
+    }
     $databaseHost = $tririgaEnvironment["DbHost"]
 
     Start-Process "$env:windir\system32\mstsc.exe" -ArgumentList "/v:$($databaseHost)"
+}
+
+<#
+.SYNOPSIS
+Gets the name of the database host for an environment
+.DESCRIPTION
+Gets the name of the database host for an environment
+#>
+function Get-DatabaseHost() {
+    [CmdletBinding()]
+    [Alias("Get-DbHost")]
+    param(
+        # The TRIRIGA environment to use.
+        [Parameter(Mandatory, Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Env", "E")]
+        [string]$environment
+    )
+
+    $tririgaEnvironment = (GetConfiguration)[$environment]
+
+    if (!$tririgaEnvironment) {
+        Write-Error "The environment `"$environment`" was not found."
+        Write-Error "Possible values are: $(((GetConfiguration).keys) -join ', ')"
+        return
+    }
+
+    $databaseHost = $tririgaEnvironment["DbHost"]
+
+    return $databaseHost
 }
 
 <#

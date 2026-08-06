@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+v5.3.0
+-------
+* Fix output of ``Get-Service``.
+* Add ``Get-ServiceMssql``, ``Get-DatabaseHost``.
+* Rename ``Open-RDPDatabase`` -> ``Open-RDPDb``
+
 v5.2.0
 ------
 * Remove invalid configuration from sample environment file. It is now ready
