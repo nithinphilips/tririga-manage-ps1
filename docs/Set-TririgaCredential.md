@@ -1,24 +1,24 @@
 ---
-external help file: Tririga-Manage-help.xml
-Module Name: Tririga-Manage
-online version: https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/enter-pssession
+external help file: Tririga-Manage-Rest-help.xml
+Module Name: Tririga-Manage-Rest
+online version:
 schema: 2.0.0
 ---
 
-# Get-TririgaInstance
+# Set-TririgaCredential
 
 ## SYNOPSIS
-Gets all known instances in a given environment
+Stores credential in an encrypted file
 
 ## SYNTAX
 
 ```
-Get-TririgaInstance [[-environment] <String>] [[-instance] <String>] [-ProgressAction <ActionPreference>]
- [<CommonParameters>]
+Set-TririgaCredential [-environment] <String> [-username] <String> [-password] <String>
+ [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets a list of all known instances in a given environment
+Gets a list of all known environment
 
 ## EXAMPLES
 
@@ -32,32 +32,30 @@ PS C:\> {{ Add example code here }}
 ## PARAMETERS
 
 ### -environment
-The TRIRIGA environment to use.
-If omitted all environments and instances will be printed.
+{{ Fill environment Description }}
 
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: Env, E
+Aliases:
 
-Required: False
+Required: True
 Position: 1
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
 
-### -instance
-The TRIRIGA instance within the environment to use.
-If omitted, command will list all instances
+### -password
+{{ Fill password Description }}
 
 ```yaml
 Type: String
 Parameter Sets: (All)
-Aliases: Inst, I
+Aliases:
 
-Required: False
-Position: 2
+Required: True
+Position: 3
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -73,6 +71,21 @@ Aliases: proga
 
 Required: False
 Position: Named
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -username
+{{ Fill username Description }}
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: True
+Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

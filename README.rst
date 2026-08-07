@@ -40,11 +40,11 @@ Features
   ``Disable``)
 * ``Upload`` or ``Import`` ObjectMigration packages
 * Tail or open TRIRIGA logs
-* Tail or open WebSphere logs
+* Tail or open WebSphere/Liberty logs
 * Open TRIRIGA installation folder
-* Open WebSphere installation folder
+* Open WebSphere/Liberty installation folder
 * Launch database tool and connect to the environment
-* Launch RDP to each instance
+* Launch RDP to each instance and the database server
 * Open PowerShell remote shell to each instance
 
 **Tririga-Manage-Rest**
@@ -556,7 +556,7 @@ License
 .. code::
 
     tririga-manage-ps1. PowerShell Modules to manage IBM TRIRIGA.
-    Copyright (C) 2024 Nithin Philips
+    Copyright (C) 2026 Nithin Philips
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

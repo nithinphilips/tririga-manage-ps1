@@ -64,7 +64,7 @@ RUN /opt/aws/install
 # Install tririga-manage-ps1 build dependencies
 ADD https://github.com/johnkerl/miller/releases/download/v${mlr_version}/miller-${mlr_version}-linux-${TARGETARCH}.deb /tmp/miller-${mlr_version}-linux-${TARGETARCH}.deb
 RUN dpkg -i /tmp/miller-${mlr_version}-linux-${TARGETARCH}.deb
-RUN pwsh -Command "Install-Module Pester -Force; Install-Module PSScriptAnalyzer -Force;"
+RUN pwsh -Command "Install-Module Pester -Force; Install-Module PSScriptAnalyzer -Force; Install-Module platyPS -Force"
 
 # Install Step CLI and nithinphilips.com root CA
 ADD https://dl.smallstep.com/cli/docs-cli-install/latest/step-cli_${TARGETARCH}.deb /tmp/step-cli_${TARGETARCH}.deb

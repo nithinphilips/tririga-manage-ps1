@@ -5,20 +5,19 @@ online version: https://learn.microsoft.com/en-us/powershell/module/microsoft.po
 schema: 2.0.0
 ---
 
-# Get-TririgaInstance
+# Enter-TririgaHostDb
 
 ## SYNOPSIS
-Gets all known instances in a given environment
+Starts a remote powershell session to a TRIRIGA database server
 
 ## SYNTAX
 
 ```
-Get-TririgaInstance [[-environment] <String>] [[-instance] <String>] [-ProgressAction <ActionPreference>]
- [<CommonParameters>]
+Enter-TririgaHostDb [-environment] <String> [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets a list of all known instances in a given environment
+Starts a remote powershell session to a TRIRIGA database server using the Enter-PSSession command.
 
 ## EXAMPLES
 
@@ -33,31 +32,14 @@ PS C:\> {{ Add example code here }}
 
 ### -environment
 The TRIRIGA environment to use.
-If omitted all environments and instances will be printed.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
 Aliases: Env, E
 
-Required: False
+Required: True
 Position: 1
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -instance
-The TRIRIGA instance within the environment to use.
-If omitted, command will list all instances
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases: Inst, I
-
-Required: False
-Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -88,3 +70,6 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 ## NOTES
 
 ## RELATED LINKS
+
+[https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/enter-pssession](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/enter-pssession)
+

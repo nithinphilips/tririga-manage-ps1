@@ -5,20 +5,19 @@ online version: https://learn.microsoft.com/en-us/powershell/module/microsoft.po
 schema: 2.0.0
 ---
 
-# Get-TririgaInstance
+# Initialize-TririgaConfiguration
 
 ## SYNOPSIS
-Gets all known instances in a given environment
+{{ Fill in the Synopsis }}
 
 ## SYNTAX
 
 ```
-Get-TririgaInstance [[-environment] <String>] [[-instance] <String>] [-ProgressAction <ActionPreference>]
- [<CommonParameters>]
+Initialize-TririgaConfiguration [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets a list of all known instances in a given environment
+{{ Fill in the Description }}
 
 ## EXAMPLES
 
@@ -30,38 +29,6 @@ PS C:\> {{ Add example code here }}
 {{ Add example description here }}
 
 ## PARAMETERS
-
-### -environment
-The TRIRIGA environment to use.
-If omitted all environments and instances will be printed.
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases: Env, E
-
-Required: False
-Position: 1
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -instance
-The TRIRIGA instance within the environment to use.
-If omitted, command will list all instances
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases: Inst, I
-
-Required: False
-Position: 2
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
 
 ### -ProgressAction
 {{ Fill ProgressAction Description }}
@@ -83,8 +50,10 @@ This cmdlet supports the common parameters: -Debug, -ErrorAction, -ErrorVariable
 
 ## INPUTS
 
+### None
 ## OUTPUTS
 
+### System.Object
 ## NOTES
 
 ## RELATED LINKS

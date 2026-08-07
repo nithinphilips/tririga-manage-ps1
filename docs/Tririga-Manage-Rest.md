@@ -1,14 +1,15 @@
 ---
 Module Name: Tririga-Manage-Rest
-Module Guid: {{ Update Module Guid }}
-Download Help Link: {{ Update Download Link }}
-Help Version: {{ Update Help Version }}
-Locale: {{ Update Locale }}
+Module Guid: 
+Download Help Link: 
+Help Version: 
+Locale: 
 ---
 
 # Tririga-Manage-Rest Module
 ## Description
-{{ Fill in the Description }}
+Reload logging categories from disk
+Uses the /api/v1/admin/platformLogging/reload method
 
 ## Tririga-Manage-Rest Cmdlets
 ### [Add-TririgaPlatformLoggingCategory](Add-TririgaPlatformLoggingCategory.md)
@@ -50,6 +51,9 @@ Sets the workflow instance recording setting to ALWAYS
 ### [Enter-TririgaHost](Enter-TririgaHost.md)
 Starts a remote powershell session to a TRIRIGA instance
 
+### [Enter-TririgaHostDb](Enter-TririgaHostDb.md)
+Starts a remote powershell session to a TRIRIGA database server
+
 ### [Get-TririgaActiveUser](Get-TririgaActiveUser.md)
 Gets a list of currently logged in users
 
@@ -73,6 +77,9 @@ Gets the cache processing mode
 
 ### [Get-TririgaDatabase](Get-TririgaDatabase.md)
 Gets the database environment information
+
+### [Get-TririgaDatabaseHost](Get-TririgaDatabaseHost.md)
+Gets the name of the database host for an environment
 
 ### [Get-TririgaDatabaseSpace](Get-TririgaDatabaseSpace.md)
 Gets the database space information
@@ -101,14 +108,23 @@ Get the WebSphere Liberty server.xml file
 ### [Get-TririgaService](Get-TririgaService.md)
 Get the current status of TRIRIGA service
 
+### [Get-TririgaServiceMssql](Get-TririgaServiceMssql.md)
+Get the current status of TRIRIGA SQL Server database service
+
 ### [Get-TririgaSummary](Get-TririgaSummary.md)
 Gets basic information about a TRIRIGA instance
 
 ### [Get-TririgaWasLog](Get-TririgaWasLog.md)
 Tails a WebSphere log file
 
+### [Get-TririgaWlpLog](Get-TririgaWlpLog.md)
+Tails a WebSphere Liberty log file
+
 ### [Import-TririgaOmp](Import-TririgaOmp.md)
 Uploads and imports a local OMP zip file to TRIRIGA
+
+### [Initialize-TririgaConfiguration](Initialize-TririgaConfiguration.md)
+{{ Fill in the Synopsis }}
 
 ### [Invoke-TririgaDatabaseTask](Invoke-TririgaDatabaseTask.md)
 Invokes a database task
@@ -128,6 +144,9 @@ Opens a TRIRIGA log file
 ### [Open-TririgaRDP](Open-TririgaRDP.md)
 Opens an RDP client connection to the TRIRIGA server
 
+### [Open-TririgaRDPDb](Open-TririgaRDPDb.md)
+Opens an RDP client connection to the TRIRIGA Database server
+
 ### [Open-TririgaWasFolder](Open-TririgaWasFolder.md)
 Opens a WebSphere profile path
 
@@ -140,6 +159,12 @@ Opens the WebSphere Admin Console
 ### [Open-TririgaWeb](Open-TririgaWeb.md)
 Opens a TRIRIGA environment
 
+### [Open-TririgaWlpFolder](Open-TririgaWlpFolder.md)
+Opens a WebSphere Liberty profile path
+
+### [Open-TririgaWlpLog](Open-TririgaWlpLog.md)
+Opens a WebSphere Liberty log file
+
 ### [Reset-TririgaPlatformLoggingDuplicates](Reset-TririgaPlatformLoggingDuplicates.md)
 Reset duplicate categories
 
@@ -151,6 +176,9 @@ Uploads a local OMP zip file to TRIRIGA
 
 ### [Set-TririgaCacheMode](Set-TririgaCacheMode.md)
 Sets the cache processing mode
+
+### [Set-TririgaCredential](Set-TririgaCredential.md)
+Stores credential in an encrypted file
 
 ### [Set-TririgaProperty](Set-TririgaProperty.md)
 Sets settings in a TRIRIGA properties file
@@ -169,6 +197,9 @@ Stops a TRIRIGA agent
 
 ### [Stop-TririgaService](Stop-TririgaService.md)
 Stops TRIRIGA service
+
+### [Sync-TririgaPlatformLogging](Sync-TririgaPlatformLogging.md)
+Reload logging categories from disk
 
 ### [Sync-TririgaPlatformLogging](Sync-TririgaPlatformLogging.md)
 Reload logging categories from disk

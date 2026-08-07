@@ -5,20 +5,20 @@ online version: https://learn.microsoft.com/en-us/powershell/module/microsoft.po
 schema: 2.0.0
 ---
 
-# Get-TririgaInstance
+# Get-TririgaWlpLog
 
 ## SYNOPSIS
-Gets all known instances in a given environment
+Tails a WebSphere Liberty log file
 
 ## SYNTAX
 
 ```
-Get-TririgaInstance [[-environment] <String>] [[-instance] <String>] [-ProgressAction <ActionPreference>]
- [<CommonParameters>]
+Get-TririgaWlpLog [-environment] <String> [[-instance] <String>] [-log <String>] [-tail <Int32>]
+ [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets a list of all known instances in a given environment
+Tails a WebSphere Liberty log file in the console
 
 ## EXAMPLES
 
@@ -33,14 +33,13 @@ PS C:\> {{ Add example code here }}
 
 ### -environment
 The TRIRIGA environment to use.
-If omitted all environments and instances will be printed.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
 Aliases: Env, E
 
-Required: False
+Required: True
 Position: 1
 Default value: None
 Accept pipeline input: False
@@ -49,7 +48,7 @@ Accept wildcard characters: False
 
 ### -instance
 The TRIRIGA instance within the environment to use.
-If omitted, command will list all instances
+If omitted, command will act on all instances.
 
 ```yaml
 Type: String
@@ -58,6 +57,23 @@ Aliases: Inst, I
 
 Required: False
 Position: 2
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -log
+The log file to view.
+Default is SystemOut.log.
+Possible values are: out, err or the exact log file name
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False
@@ -74,6 +90,21 @@ Aliases: proga
 Required: False
 Position: Named
 Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
+### -tail
+The initial number of lines to tail.
+
+```yaml
+Type: Int32
+Parameter Sets: (All)
+Aliases:
+
+Required: False
+Position: Named
+Default value: 10
 Accept pipeline input: False
 Accept wildcard characters: False
 ```

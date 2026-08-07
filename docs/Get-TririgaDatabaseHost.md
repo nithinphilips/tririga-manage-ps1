@@ -5,20 +5,19 @@ online version: https://learn.microsoft.com/en-us/powershell/module/microsoft.po
 schema: 2.0.0
 ---
 
-# Get-TririgaInstance
+# Get-TririgaDatabaseHost
 
 ## SYNOPSIS
-Gets all known instances in a given environment
+Gets the name of the database host for an environment
 
 ## SYNTAX
 
 ```
-Get-TririgaInstance [[-environment] <String>] [[-instance] <String>] [-ProgressAction <ActionPreference>]
- [<CommonParameters>]
+Get-TririgaDatabaseHost [-environment] <String> [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
-Gets a list of all known instances in a given environment
+Gets the name of the database host for an environment
 
 ## EXAMPLES
 
@@ -33,31 +32,14 @@ PS C:\> {{ Add example code here }}
 
 ### -environment
 The TRIRIGA environment to use.
-If omitted all environments and instances will be printed.
 
 ```yaml
 Type: String
 Parameter Sets: (All)
 Aliases: Env, E
 
-Required: False
+Required: True
 Position: 1
-Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -instance
-The TRIRIGA instance within the environment to use.
-If omitted, command will list all instances
-
-```yaml
-Type: String
-Parameter Sets: (All)
-Aliases: Inst, I
-
-Required: False
-Position: 2
 Default value: None
 Accept pipeline input: False
 Accept wildcard characters: False

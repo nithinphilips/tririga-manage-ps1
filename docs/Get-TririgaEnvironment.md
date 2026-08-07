@@ -13,7 +13,7 @@ Gets all known environments
 ## SYNTAX
 
 ```
-Get-TririgaEnvironment [-raw] [-ProgressAction <ActionPreference>] [<CommonParameters>]
+Get-TririgaEnvironment [[-environment] <String>] [-ProgressAction <ActionPreference>] [<CommonParameters>]
 ```
 
 ## DESCRIPTION
@@ -30,6 +30,22 @@ PS C:\> {{ Add example code here }}
 
 ## PARAMETERS
 
+### -environment
+The TRIRIGA environment to use.
+If omitted all environments and instances will be printed.
+
+```yaml
+Type: String
+Parameter Sets: (All)
+Aliases: Env, E
+
+Required: False
+Position: 1
+Default value: None
+Accept pipeline input: False
+Accept wildcard characters: False
+```
+
 ### -ProgressAction
 {{ Fill ProgressAction Description }}
 
@@ -41,21 +57,6 @@ Aliases: proga
 Required: False
 Position: Named
 Default value: None
-Accept pipeline input: False
-Accept wildcard characters: False
-```
-
-### -raw
-If set, the object is returned as-is.
-
-```yaml
-Type: SwitchParameter
-Parameter Sets: (All)
-Aliases:
-
-Required: False
-Position: Named
-Default value: False
 Accept pipeline input: False
 Accept wildcard characters: False
 ```
