@@ -587,9 +587,12 @@ function Start-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
+            Write-Output "Starting $tririgaEnvName $tririgaInstName"
+
             if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Start")) {
-                Write-Output "Starting $tririgaEnvName $tririgaInstName"
-                sc.exe \\$tririgaHost start "$service"
+                Invoke-Command -ComputerName $tririgaHost -ScriptBlock {
+                    Microsoft.PowerShell.Management\Start-Service -Name "$($using:service)"
+                }
             }
 
             if ($instances.Count -eq 1) {
@@ -634,9 +637,12 @@ function Stop-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
+            Write-Output "Stopping $tririgaEnvName $tririgaInstName"
+
             if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Stop")) {
-                Write-Output "Stopping $tririgaEnvName $tririgaInstName"
-                sc.exe \\$tririgaHost stop "$service"
+                Invoke-Command -ComputerName $tririgaHost -ScriptBlock {
+                    Microsoft.PowerShell.Management\Stop-Service -Name "$($using:service)" -Force
+                }
             }
         }
     }
@@ -662,7 +668,9 @@ function Restart-Service() {
         # If omitted, command will act on all instances.
         [Alias("Inst", "I")]
         [Parameter(Position=1)]
-        [string]$instance
+        [string]$instance,
+        # If set, performs a rolling restart. The command will wait until a server is online before restarting next
+        [switch]$rolling
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance)
@@ -679,25 +687,27 @@ function Restart-Service() {
             $service = $inst["Service"]
 
             Write-Output "Restarting $tririgaEnvName $tririgaInstName"
-            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Stop")) {
-                sc.exe \\$tririgaHost stop "$service"
-                Write-Output "Waiting 30 seconds for the service to stop"
-                Start-Sleep -Seconds 30
-            }
 
-            if ($PSCmdlet.ShouldProcess("Clock", "Wait for 30 seconds")) {
-                Write-Output "Waiting 30 seconds for the service to stop"
-                Start-Sleep -Seconds 30
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Stop")) {
+                Invoke-Command -ComputerName $tririgaHost -ScriptBlock {
+                    Microsoft.PowerShell.Management\Stop-Service -Name "$($using:service)" -Force
+                }
             }
 
             if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Start")) {
-                sc.exe \\$tririgaHost start "$service"
+                $startServiceJob = Invoke-Command -AsJob -ComputerName $tririgaHost -ScriptBlock {
+                    Microsoft.PowerShell.Management\Start-Service -Name "$($using:service)"
+                }
             }
 
-            if ($instances.Count -gt 1) {
-                Start-Sleep -Seconds 2
+            if ($rolling) {
+                Get-Log -environment $tririgaEnvName -instance $tririgaInstName -log $null -UntilStart
             } else {
-                Get-Log -environment $inst["Environment"] -instance $inst["Instance"] -log $null
+                if ($instances.Count -gt 1) {
+                    Start-Sleep -Seconds 2
+                } else {
+                    Get-Log -environment $inst["Environment"] -instance $inst["Instance"] -log $null
+                }
             }
         }
     }
@@ -738,8 +748,10 @@ function Disable-Service() {
             $tririgaHost = $inst["Host"]
             $service = $inst["Service"]
 
-            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Change Start Mode to Demand")) {
-                sc.exe \\$tririgaHost config "$service" start= demand
+            if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Change Start Mode to Manual")) {
+                Invoke-Command -ComputerName $tririgaHost -ScriptBlock {
+                    Microsoft.PowerShell.Management\Set-Service -Name "$($using:service)" -StartupType Manual
+                }
             }
         }
     }
@@ -781,7 +793,9 @@ function Enable-Service() {
             $service = $inst["Service"]
 
             if ($PSCmdlet.ShouldProcess("$tririgaEnvName $tririgaInstName $service", "Change Start Mode to Auto")) {
-                sc.exe \\$tririgaHost config "$service" start= auto
+                Invoke-Command -ComputerName $tririgaHost -ScriptBlock {
+                    Microsoft.PowerShell.Management\Set-Service -Name "$($using:service)" -StartupType Automatic
+                }
             }
         }
     }
@@ -858,7 +872,9 @@ function Get-Log() {
         # The initial number of lines to tail
         [int]$tail = 10,
         # If set, do not wait for new log output
-        [switch]$noWait
+        [switch]$noWait,
+        # If set, the log tailing will terminate when the startup complete message is printed to log
+        [switch]$untilStart
     )
 
     $instances = (GetTririgaInstances -environment $environment -instance $instance -warn $False)
@@ -872,7 +888,23 @@ function Get-Log() {
             $logRoot = Join-Path -Path $tririgaRoot -ChildPath "log"
             $logPath = Join-Path -Path $logRoot -ChildPath (GetTririgaLogName $log)
             if ($PSCmdlet.ShouldProcess("$logPath", "Tail file")) {
-                Get-Content -Tail $tail -Wait:$waitFlag $logPath
+                if($untilStart) {
+                    # Tail last X line, but do not wait
+                    Get-Content -Tail $tail $logPath
+                    while ($true) {
+                        Get-Content $logPath -Wait -Tail 0 | ForEach-Object {
+                            $_
+
+                            if ($_ -match "TRIRIGA Application started in:") {
+                                break
+                            }
+                        }
+                        break # Breaks the outer while loop once the pipeline halts
+                    }
+                } else {
+                    Get-Content -Tail $tail -Wait:$waitFlag $logPath
+                }
+
             }
         }
     }
