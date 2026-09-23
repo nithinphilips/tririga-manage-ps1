@@ -68,6 +68,9 @@ RUN dpkg -i /tmp/step-cli_${TARGETARCH}.deb
 RUN step ca bootstrap --ca-url https://stepca.sterling.nithinphilips.com --fingerprint c0231014f006b79252f38a8f6c1cf42dcb8095b803c15e5fc1768fe2c13cd3fd
 RUN step certificate install "$(step path)/certs/root_ca.crt"
 
+RUN ssh-keyscan -H github.com >> ~/.ssh/known_hosts; \
+    ssh-keyscan -H gitea.sterling.nithinphilips.com >> ~/.ssh/known_hosts
+
 WORKDIR /workspace
 
 ENTRYPOINT ["pwsh"]

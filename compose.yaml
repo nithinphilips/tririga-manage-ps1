@@ -8,6 +8,7 @@ services:
     tty: true
     volumes:
       - .:/workspace
+      - ~/.config/tea:/root/.config/tea:ro
       - "${SSH_AUTH_SOCK}:/run/ssh-agent.sock"
     environment:
       - SSH_AUTH_SOCK=/run/ssh-agent.sock
