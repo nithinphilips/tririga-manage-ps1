@@ -238,6 +238,22 @@ function HandleOmp() {
     }
 }
 
+# Source https://claytonerrington.com/blog/human-readable-file-sizes-in-power-shell/
+function DisplayFileSize {
+    param (
+        $bytecount
+    )
+
+    switch -Regex ([math]::truncate([math]::log($bytecount,1024))) {
+        '^0' {"$bytecount Bytes"}
+        '^1' {"{0:n2} KB" -f ($bytecount / 1KB)}
+        '^2' {"{0:n2} MB" -f ($bytecount / 1MB)}
+        '^3' {"{0:n2} GB" -f ($bytecount / 1GB)}
+        '^4' {"{0:n2} TB" -f ($bytecount / 1TB)}
+        Default {"{0:n2} Bytes" -f ($bytecount / 1KB)}
+    }
+}
+
 function Initialize-Configuration() {
     [CmdletBinding()]
     param()
@@ -422,7 +438,7 @@ function Get-Service() {
                         if ($percentUsed -ge 80) {
                             $diskColor = "red"
                         }
-                        Write-Host -ForegroundColor $diskColor "$percentUsed% Used"
+                        Write-Host -ForegroundColor $diskColor "$percentUsed% Used of $(DisplayFileSize($total))"
                     }
                 }
 
@@ -530,7 +546,7 @@ function Get-ServiceMssql() {
                 if ($percentUsed -ge 80) {
                     $diskColor = "red"
                 }
-                Write-Host -ForegroundColor $diskColor "$percentUsed% Used"
+                Write-Host -ForegroundColor $diskColor "$percentUsed% Used of $(DisplayFileSize($total))"
             }
         }
     }
