@@ -36,7 +36,7 @@ Container based development is only tested on Linux.
 
 Build the container::
 
-    podman build --platform linux/amd64 -t tririga-manage-ps1-dev .
+    podman-compose run --build pwsh
 
 Start container::
 

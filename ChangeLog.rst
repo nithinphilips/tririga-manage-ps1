@@ -1,6 +1,22 @@
 Change Log
 ==========
 
+v5.4.0
+------
+2026 Sep 23
+
+* Include total disk size in disk output
+* Add ``-UntilStart`` switch to ``Tail-Log``. This will check the log messages
+  for the text *TRIRIGA Application started in:* and when found quits.
+* Add ``-Rolling`` flag to ``Restart-Service``. It uses the ``Tail-Log``
+  command's ``-UntilStart`` to ensure that each server is ready to service
+  users before restart next. This should minimize service disruption during
+  restarts.
+* Use PowerShell ``*-Service`` cmdlets with ``Invoke-Command`` to control
+  remote services. This provides enhanced command semantics (``Stop-Service``
+  and ``Start-Service`` now blocks until the service reports successful start
+  or stop.
+
 v5.3.0
 -------
 * Fix output of ``Get-Service``.

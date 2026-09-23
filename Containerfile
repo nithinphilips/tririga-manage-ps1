@@ -8,10 +8,6 @@
 # Install-Module PSScriptAnalyzer -Force
 # Import-Module PSScriptAnalyzer -PassThru
 
-# The graalvm download file from Oracle only contains the major version (25).
-# We want to be able to tag our image with the exact version.
-# So, the downloaded files on file.chicago.nithinphilips.com are renamed to
-# include the exact full version.
 ARG gh_version=2.89.0
 ARG tea_version=0.13.0
 ARG mlr_version=6.20.2
@@ -49,7 +45,7 @@ RUN apt-get update && \
     apt-get install -y unzip curl make xmlstarlet pandoc wget curl git zip unzip build-essential zlib1g-dev ca-certificates gawk dos2unix vim && \
     apt-get clean
 
-# Tools for Release-mk (https://gitea.sterling.nithinphilips.com/nithin/release-mk#requirements)
+# Tools for Release-mk
 # Install Tea and Markdown Extract
 ADD https://gitea.com/gitea/tea/releases/download/v${tea_version}/tea-${tea_version}-linux-${TARGETARCH} /usr/local/bin/tea
 COPY --from=mdebuild /usr/local/cargo/bin/markdown-extract /usr/local/bin/markdown-extract

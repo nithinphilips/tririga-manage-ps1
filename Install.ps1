@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 param(
-    [string]$version="5.3.0",
+    [string]$version="5.4.0",
     [switch]$updateModule,
     [switch]$noInstallModule,
     [switch]$publish,

@@ -145,3 +145,29 @@ http://localhost:9080/api/doc/p/WorkflowAgentInfoController
 - [ ] Limit-WorkflowMax -Max
 - [ ] Limit-WorkflowAgent -User -Group
 
+Implement
+
+- [x] Implement Invoke-RollingRestart <ENV>
+
+      This should restart servers in order. Wait until the Server started in x
+      seconds message shows, then restart the next server.
+
+
+      We may want to just roll this feature into Restart-Service. Optionally 
+      skip waiting for the online message (or probe the HTTP service--probably more
+      general and reliable) into it behind a flag.
+
+      Also move away from sc.exe, which has cluttered output. Use the X-Service
+      commands in powershell to control the service.
+
+
+      Restart:
+
+      1. Stop-Service <x>
+      2. <wait for process termination>
+      3. Start-Service <x>
+      4. Wait for HTTP service to respond
+      5. terminate
+
+      2026 Sep 23: The current implementation just watches for a line in the
+      log. This allows us to tail the log during startup without blocking.
