@@ -23,6 +23,7 @@ RELEASE_DIST_DEP:=update-module dist
 RELEASE_DEPS:=publish-psgallery
 RELEASE_GITEA_DEPS:=publish-gitea
 RELEASE_CHECK_DEPS:=code-check
+include Common.mk
 include Release.mk
 
 .INTERMEDIATE: Tririga-Manage.csv Tririga-Manage-Rest.csv Tririga-Manage.processed.csv Tririga-Manage-Rest.processed.csv Tririga-Manage.rst.tmp Tririga-Manage-Rest.rst.tmp all-docs.csv all-docs.tmp README.docx ChangeLog.docx ChangeLog.md ChangeLog.$(GIT_TAG).md environments.sample.psd1.tmp

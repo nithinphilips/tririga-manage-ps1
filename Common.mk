@@ -1,3 +1,5 @@
+# TODO: If running from PowerShell etc. There is no uname command. Need to check for that
+
 # Detect OS and architecture
 # For any native builds
 ifeq ($(OS),Windows_NT)
@@ -27,3 +29,13 @@ else
   WILD_STAR=\*
 endif
 
+# Prints a colorized output of variable and its value
+#
+# $(call PRINT_KV_INFO,VAR1)
+#
+# By default the label is the variable name. To use something else:
+#
+# $(call PRINT_KV_INFO,VAR1,Label One)
+define PRINT_KV_INFO
+	printf "\e[1;36m$(or $(2),$(1)): \033[34m$($(1))\e[0m\n"
+endef

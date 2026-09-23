@@ -1,16 +1,17 @@
-.PHONY: release-info release release-github release-gitea release-s3 create-git-tag
+.PHONY: release-info release release-github release-gitea release-rclone create-git-tag
 SHELL := /bin/bash
 # Uncomment above and run make --debug --trace ...
 
-######################################
+#
 # Release management for Make projects
-######################################
+#
 
 CMD_NOT_FOUND = $(error $(1) command is required for Release.mk)
 CHECK_CMD = $(if $(shell command -v $(1)),,$(call CMD_NOT_FOUND,$(1)))
 
 #
 # Required Variables
+# You must set these in the project that is using Release.mk
 #
 
 ifndef PROJECT
@@ -26,16 +27,19 @@ ifndef RELEASE_DIST_FILES
 endif
 
 #
-# If not set, auto detect remotes and remote types
+# If the Git repo has multiple remotes, users can specify their names or
+# let Release.mk auto detect.
 #
-GITHUB_REMOTE_NAME?=$(shell git remote -v | grep --max-count 1 github.com | awk '{print $$1}')
-GITEA_REMOTE_NAME?=$(shell git remote -v | grep --max-count 1 gitea | awk '{print $$1}')
-S3_BUCKET?=
+# If not set, auto detect Git remotes and remote types
 
 #
+GITHUB_REMOTE_NAME?=$(shell test -d .git && git remote -v | grep --max-count 1 github.com | awk '{print $$1}')
+GITEA_REMOTE_NAME?=$(shell test -d .git && git remote -v | grep --max-count 1 gitea | awk '{print $$1}')
+RCLONE_DEST?=
 # The name of the dependency that will build the distribution packages
-#
+# The `release` target will depend on this
 RELEASE_DIST_DEP?=dist
+# The name of the Git tag
 GIT_TAG?=v$(VERSION)
 
 # If 1, the released files will be overwritten if they already exist
@@ -44,27 +48,42 @@ GIT_TAG?=v$(VERSION)
 # Github: If file exists and RELEASE_CLOBBER=0 an error is thrown
 RELEASE_CLOBBER=1
 
+# The file containing ChangeLog.
+# Each version must have a 2nd level entry with the Git tag as the title.
+#
+# Example
+#
+# ```
+# Project
+# =======
+#
+# v1.0.0
+# ------
+# * My Changes
+# ```
 CHANGELOG_FILE?=ChangeLog.rst
 
-########################
+#
 # Dependency Integration
-########################
-# Additional targets for the release to depend on
+#
+# Additional targets for `release` target to depend on
 # RELEASE_DIST_DEP is already required
 RELEASE_DEPS:=
 
-# Additional target for the release to depend on, but only when publishing to Github, Gitea, or S3
+# Additional target for `release` target to depend on, but only for a
+# corresponding type
 RELEASE_GITEA_DEPS?=
 RELEASE_GITHUB_DEPS?=
-RELEASE_S3_DEPS?=
+RELEASE_RCLONE_DEPS?=
 
+# Additional target for `release-check` target to depend on
 RELEASE_CHECK_DEPS?=
 
-#######
+#
 # Tools
-#######
+#
 PANDOC_BIN?=pandoc
-AWS_BIN?=aws
+RCLONE_BIN?=rclone
 # cargo install markdown-extract
 MARKDOWN_EXTRACT_BIN?=markdown-extract
 GITHUB_BIN?=gh
@@ -86,29 +105,29 @@ else:
 endif
 
 GITEA_BIN_FLAGS?=--remote $(GITEA_REMOTE_NAME)
-S3_BIN_FLAGS?=--acl=public-read
+RCLONE_BIN_FLAGS?=--s3-acl public-read
 
 NO_GIT_REMOTE_CHECK?=0
 NO_GITHUB_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
 NO_GITEA_REMOTE_CHECK:=$(NO_GIT_REMOTE_CHECK)
 
-#################
+#
 # Release Options
-#################
+#
 
-RELEASE_HAS_GITHUB_REMOTE=$(shell test $$(git remote -v | grep -c -F github.com) -gt 0 && echo "1" || echo "0")
-RELEASE_HAS_GITEA_REMOTE=$(shell test $$(git remote -v | grep -c -F gitea) -gt 0 && echo "1" || echo "0")
+RELEASE_HAS_GITHUB_REMOTE=$(shell test -d .git && test $$(git remote -v | grep -c -F github.com) -gt 0 && echo "1" || echo "0")
+RELEASE_HAS_GITEA_REMOTE=$(shell test -d .git && test $$(git remote -v | grep -c -F gitea) -gt 0 && echo "1" || echo "0")
 
-# These flags allow us to enable/disable Github/Gitea/S3 remote releases independently
+# These flags allow us to enable/disable Github/Gitea/Rclone remote releases independently
 # By default we auto detect based on which remotes are present
 ENABLE_GITHUB_RELEASE?=$(RELEASE_HAS_GITHUB_REMOTE)
 ENABLE_GITEA_RELEASE?=$(RELEASE_HAS_GITEA_REMOTE)
-# Enable/disable S3 release based on the S3_BUCKET variable
-ifndef S3_BUCKET
-  #$(info S3_BUCKET is not set. S3 Release will be disabled)
-  ENABLE_S3_RELEASE?=0
+# Enable/disable RClone release based on the RCLONE_DEST variable
+ifndef RCLONE_DEST
+  #$(info RCLONE_DEST is not set. RClone Release will be disabled)
+  ENABLE_RCLONE_RELEASE?=0
 else
-  ENABLE_S3_RELEASE?=1
+  ENABLE_RCLONE_RELEASE?=1
 endif
 
 # If a release type is disabled, skip remote tag check for that type
@@ -126,31 +145,34 @@ RELEASE_DEPS?=
 ifeq ($(ENABLE_GITHUB_RELEASE),1)
  RELEASE_DEPS:=$(RELEASE_DEPS) release-github
  GITHUB_BIN_FLAGS=$(GITHUB_BIN_FLAGS) --repo "$(shell git remote get-url $(GITHUB_REMOTE_NAME))"
- #$(call CHECK_CMD,$(GITHUB_BIN))
+ $(call CHECK_CMD,$(GITHUB_BIN))
 endif
 
 ifeq ($(ENABLE_GITEA_RELEASE),1)
  RELEASE_DEPS:=$(RELEASE_DEPS) release-gitea
- #$(call CHECK_CMD,$(GITEA_BIN))
+ $(call CHECK_CMD,$(GITEA_BIN))
 endif
 
-ifeq ($(ENABLE_S3_RELEASE),1)
- RELEASE_DEPS:=$(RELEASE_DEPS) release-s3
- #$(call CHECK_CMD,$(AWS_BIN))
+ifeq ($(ENABLE_RCLONE_RELEASE),1)
+ RELEASE_DEPS:=$(RELEASE_DEPS) release-rclone
+ $(call CHECK_CMD,$(RCLONE_BIN))
 endif
 
 .INTERMEDIATE: ChangeLog.$(GIT_TAG).md ChangeLog.md
 
 release-info: ## Debug information about the release configuration
-	@echo "RELEASE_HAS_GITHUB_REMOTE: $(RELEASE_HAS_GITHUB_REMOTE)"
-	@echo "RELEASE_HAS_GITEA_REMOTE: $(RELEASE_HAS_GITEA_REMOTE)"
-	@echo "ENABLE_GITHUB_RELEASE: $(ENABLE_GITHUB_RELEASE)"
-	@echo "ENABLE_GITEA_RELEASE: $(ENABLE_GITEA_RELEASE)"
-	@echo "ENABLE_S3_RELEASE: $(ENABLE_S3_RELEASE)"
-	@echo "GITEA_REMOTE_NAME: $(GITEA_REMOTE_NAME)"
-	@echo "GITHUB_REMOTE_NAME: $(GITHUB_REMOTE_NAME)"
-	@echo "RELEASE_DEPS: $(RELEASE_DEPS)"
-	@echo "RELEASE_DIST_FILES: $(RELEASE_DIST_FILES)"
+	$(call PRINT_KV_INFO,PROJECT)
+	$(call PRINT_KV_INFO,VERSION)
+	$(call PRINT_KV_INFO,RELEASE_HAS_GITHUB_REMOTE)
+	$(call PRINT_KV_INFO,RELEASE_HAS_GITEA_REMOTE)
+	$(call PRINT_KV_INFO,ENABLE_GITHUB_RELEASE)
+	$(call PRINT_KV_INFO,ENABLE_GITEA_RELEASE)
+	$(call PRINT_KV_INFO,ENABLE_RCLONE_RELEASE)
+	$(call PRINT_KV_INFO,GITEA_REMOTE_NAME)
+	$(call PRINT_KV_INFO,GITHUB_REMOTE_NAME)
+	$(call PRINT_KV_INFO,RCLONE_DEST)
+	$(call PRINT_KV_INFO,RELEASE_DEPS)
+	$(call PRINT_KV_INFO,RELEASE_DIST_FILES)
 
 # Convert RST files to Markdown
 %.md: %.rst
@@ -206,8 +228,8 @@ release-gitea: $(RELEASE_GITEA_DEPS) $(RELEASE_DIST_DEP) ChangeLog.$(GIT_TAG).md
 	fi
 	$(foreach dist_file,$(RELEASE_DIST_FILES),$(GITEA_BIN) release assets create $(GITEA_BIN_FLAGS) $(GIT_TAG) $(dist_file) && printf "\e[1;38:5:40m✓\e[0m Gitea: Uploaded file $(dist_file) to release $(GIT_TAG)\n";)
 
-release-s3: $(RELEASE_S3_DEPS) $(RELEASE_DIST_DEP) ## Release to AWS S3
-	$(foreach dist_file,$(RELEASE_DIST_FILES),aws s3 cp --quiet "$(dist_file)" s3://$(S3_BUCKET) $(S3_BIN_FLAGS) && printf "\e[1;38:5:40m✓\e[0m S3: Uploaded file $(dist_file) to https://$(S3_BUCKET).s3.amazonaws.com/$(notdir $(dist_file))\n";)
+release-rclone: $(RELEASE_RCLONE_DEPS) $(RELEASE_DIST_DEP) ## Release to an RClone destination
+	$(foreach dist_file,$(RELEASE_DIST_FILES),$(RCLONE_BIN) copy --progress "$(dist_file)" $(RCLONE_DEST) $(RCLONE_BIN_FLAGS) && printf "\e[1;38:5:40m✓\e[0m RClone: Uploaded file $(dist_file) to $(RCLONE_DEST)\n";)
 
 release: $(RELEASE_DEPS) ## Publishes releases
 
