@@ -7,4 +7,8 @@ services:
     stdin_open: true
     tty: true
     volumes:
-          - .:/workspace
+      - .:/workspace
+      - "${SSH_AUTH_SOCK}:/run/ssh-agent.sock"
+    environment:
+      - SSH_AUTH_SOCK=/run/ssh-agent.sock
+      - GH_TOKEN=${GH_TOKEN}

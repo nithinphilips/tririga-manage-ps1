@@ -42,7 +42,7 @@ ARG gh_version tea_version mlr_version TARGETARCH
 
 # Install build deps
 RUN apt-get update && \
-    apt-get install -y unzip curl make xmlstarlet pandoc wget curl git zip unzip build-essential zlib1g-dev ca-certificates gawk dos2unix vim && \
+    apt-get install -y unzip curl make xmlstarlet pandoc wget curl git zip unzip build-essential zlib1g-dev ca-certificates gawk dos2unix vim ssh && \
     apt-get clean
 
 # Tools for Release-mk

@@ -34,13 +34,12 @@ Develop Using the Container
 ---------------------------
 Container based development is only tested on Linux.
 
-Build the container::
+Build and run the container::
 
+    export GH_TOKEN=$(gh auth token)
     podman-compose run --build pwsh
 
-Start container::
-
-    podman run --network host -v .:/workspace -it tririga-manage-ps1-dev
+You can omit ``--build`` to skip container build for subsequent invocations.
 
 Initialize::
 
